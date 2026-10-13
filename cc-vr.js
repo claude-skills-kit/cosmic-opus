@@ -50,7 +50,7 @@ export function initCosmicVR({ stage, buttons, getCap, onEnter, onExit, onPlay, 
   async function enter() {
     if (session) return;
     onEnter && onEnter();               // runs inside the click: starts audio and the film
-    await fontsReady();
+    const fonts = fontsReady();         // not awaited: requestSession must still hold the click's user activation
     if (!built) build();
     composer.renderToScreen = false; composer.setPixelRatio(1); composer.setSize(FILM_W, FILM_H); stage.bloom.setSize(FILM_W, FILM_H);
     stage.camera.aspect = FILM_W / FILM_H; stage.camera.updateProjectionMatrix();
@@ -58,6 +58,7 @@ export function initCosmicVR({ stage, buttons, getCap, onEnter, onExit, onPlay, 
     try { session = await startXR(R, { scale: 0.9, onEnd: leave }); }
     catch (e) { console.warn('XR', e); restore(); return; }
     api.active = true; placeIn = 3; lastKey = '';
+    fonts.then(() => { lastKey = ''; }); // redraw the subtitles once the Thai fonts are in
   }
   function restore() {
     R.xr.enabled = false; composer.renderToScreen = true;

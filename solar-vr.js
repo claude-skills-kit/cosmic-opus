@@ -30,13 +30,18 @@ export function initSolarVR({ scene, S, ORDER, audio, button, onEnter, onExit })
   async function enter() {
     if (session) return;
     audio.init();
-    await fontsReady();
+    // an immersive session needs the click's user activation, so request it before awaiting anything slow
+    const fonts = fontsReady();
+    if (!fade) fade = new Fade(cam);
+    fade.v = fade.to = 1; fade.update(0); // stay black until the model is placed
     saved = { pos: cam.position.clone(), quat: cam.quaternion.clone(), near: cam.near, speed: scene.speed, mode: scene.mode, focus: scene.focus };
     if (scene.mode !== 'map') scene.setMode('map');
     scene._tw = null; scene.controls.enabled = false;
     try { session = await startXR(R, { scale: 1.0, onEnd: leave }); }
-    catch (e) { console.warn('XR', e); scene.controls.enabled = true; return; }
+    catch (e) { console.warn('XR', e); scene.controls.enabled = true; fade.v = fade.to = 0; fade.update(0); return; }
     cam.near = 0.05; cam.updateProjectionMatrix();
+    await fonts; // labels and panels are drawn on canvases, so the Thai fonts must be in first
+    if (!session) return; // the session already ended while the fonts were loading
     if (!built) build();
     dock.mesh.visible = card.mesh.visible = true;
     fade.v = fade.to = 1; // start black; the head pose only arrives with the first rendered XR frame
@@ -49,8 +54,10 @@ export function initSolarVR({ scene, S, ORDER, audio, button, onEnter, onExit })
     session = null; scene.onXRFrame = null; tourStop(); audio.stopVoice(); audio.focusBed(null);
     rig.position.set(0, 0, 0); rig.quaternion.identity(); rig.scale.setScalar(1);
     if (saved) { cam.position.copy(saved.pos); cam.quaternion.copy(saved.quat); cam.near = saved.near; cam.updateProjectionMatrix(); scene.speed = saved.speed; }
-    labels.forEach(l => l.visible = false); dock.mesh.visible = card.mesh.visible = false;
-    pointers.forEach(p => { p.dot.visible = false; p.hover = null; });
+    if (built) {
+      labels.forEach(l => l.visible = false); dock.mesh.visible = card.mesh.visible = false;
+      pointers.forEach(p => { p.dot.visible = false; p.hover = null; });
+    }
     fade.v = fade.to = 0; fade.wait = null; fade.update(0);
     scene.focus = null; scene.controls.enabled = true; scene.resize();
     onExit && onExit(focus);
@@ -59,7 +66,7 @@ export function initSolarVR({ scene, S, ORDER, audio, button, onEnter, onExit })
   // ---------------- objects ----------------
   function build() {
     built = true;
-    fade = new Fade(cam);
+    fade = fade || new Fade(cam);
     pointers = makePointers(R, rig, { onSelect });
     dock = new Panel(1.12, 0.3, 1100); rig.add(dock.mesh);
     card = new Panel(0.9, 0.56, 1100); rig.add(card.mesh);
