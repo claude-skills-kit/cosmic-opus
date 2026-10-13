@@ -1,0 +1,57 @@
+{
+ "overview": {
+  "file": "audio/vo/solar/01-overview.mp3",
+  "dur": 15.3,
+  "speech": 15.44
+ },
+ "sun": {
+  "file": "audio/vo/solar/02-sun.mp3",
+  "dur": 20.29,
+  "speech": 20.4
+ },
+ "mercury": {
+  "file": "audio/vo/solar/03-mercury.mp3",
+  "dur": 19.13,
+  "speech": 19.12
+ },
+ "venus": {
+  "file": "audio/vo/solar/04-venus.mp3",
+  "dur": 14.9,
+  "speech": 14.96
+ },
+ "earth": {
+  "file": "audio/vo/solar/05-earth.mp3",
+  "dur": 20.35,
+  "speech": 20.32
+ },
+ "mars": {
+  "file": "audio/vo/solar/06-mars.mp3",
+  "dur": 18.41,
+  "speech": 18.32
+ },
+ "jupiter": {
+  "file": "audio/vo/solar/07-jupiter.mp3",
+  "dur": 18.9,
+  "speech": 18.88
+ },
+ "saturn": {
+  "file": "audio/vo/solar/08-saturn.mp3",
+  "dur": 20.48,
+  "speech": 20.48
+ },
+ "uranus": {
+  "file": "audio/vo/solar/09-uranus.mp3",
+  "dur": 20.58,
+  "speech": 20.52
+ },
+ "neptune": {
+  "file": "audio/vo/solar/10-neptune.mp3",
+  "dur": 18.2,
+  "speech": 18.08
+ },
+ "moon": {
+  "file": "audio/vo/solar/11-moon.mp3",
+  "dur": 19.763,
+  "speech": 19.84
+ }
+}

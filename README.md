@@ -32,7 +32,19 @@
 - `solar-tools-v2.js` เครื่องมือประกอบการสอน
 - `solar-app-v2.js` UI, ทัวร์, คีย์ลัด
 
-คีย์ลัด: `1–8` ดาวเคราะห์ · `9` ดวงจันทร์ · `0` ดวงอาทิตย์ · `T` ทัวร์ · `L` แสงเดินทาง · `O` ภาพรวม · `?` คู่มือ
+คีย์ลัด: `1–8` ดาวเคราะห์ · `9` ดวงจันทร์ · `0` ดวงอาทิตย์ · `T` ทัวร์ · `L` แสงเดินทาง · `O` ภาพรวม · `M` เสียง · `?` คู่มือ
+
+## เสียงบรรยายและโหมด VR
+
+**เสียงบรรยายภาษาไทย** ปฏิทินจักรวาลมีเสียงบรรยายทุกฉาก (กด `N` เปิด/ปิด) ฉากที่สั้นกว่าเสียงบรรยายจะเล่นช้าลงให้พอดี ไม่ตัดเสียง ทัวร์ระบบสุริยะมีเสียงบรรยายทุกจุด และแต่ละดาวมีปุ่ม "ฟังบรรยาย" ในบทเรียน เสียงพากย์สร้างด้วย ElevenLabs Eleven v4 (เสียง Jessica) เสียงประกอบสร้างด้วย ElevenLabs Sound Effects v2 ทั้งคู่เรียกผ่าน fal.ai
+
+**โหมด VR (WebXR)** เปิดเว็บในเบราว์เซอร์ของแว่น เช่น Meta Quest 2 ขึ้นไป แล้วกดปุ่ม VR (ต้องเปิดผ่าน HTTPS)
+- ระบบสุริยะ: ระบบสุริยะทั้งระบบย่อลงมาเป็นโมเดลบนโต๊ะตรงหน้า ชี้ดาวแล้วกดไกปืนเพื่อบินไปดูใกล้ ๆ ในขนาดใหญ่เท่าตัวจริงในห้อง มีแผงเมนูระดับเอว การ์ดข้อมูล และทัวร์นำชมพร้อมเสียงบรรยาย (คันโยก = ดาวถัดไป, A = ทัวร์, B = ภาพรวม)
+- ปฏิทินจักรวาล: ฉายบนจอโค้งใหญ่กลางอวกาศแบบโรงหนัง มีคำบรรยายใต้จอ (ไกปืน = เล่น/หยุด, คันโยก = เปลี่ยนบท, A = เสียงบรรยาย, ปุ่มกำ = จัดจอให้อยู่ตรงหน้า) กล้องในหนังเคลื่อนที่ตลอด ถ้าพาคนดูเคลื่อนตามในแว่นจะเวียนหัว จึงฉายเป็นจอแทน
+
+- `vr-kit.js` ตัวช่วย WebXR ร่วม (เริ่ม session, แผงข้อความไทยบน canvas, ลำแสงจากจอย, จอมืดตอนเปลี่ยนจุด)
+- `audio-kit.js` Web Audio ร่วม (เสียงบรรยาย, เสียงประกอบ, เสียงพื้นหลังที่วนต่อเนื่องแบบ crossfade)
+- `solar-vr.js` `solar-audio.js` · `cc-vr.js` `cc-vo.js`
 
 ## รันเอง
 
@@ -56,6 +68,7 @@ three.js r160 โหลดจาก unpkg ผ่าน import map ต้อง�
 ## สัญญาอนุญาต
 
 - **โค้ด** (HTML/CSS/JS): MIT — ดู [LICENSE](LICENSE)
+- **เสียง** ใน `audio/`: สร้างด้วย ElevenLabs (Eleven v4 + Sound Effects v2) ผ่าน fal.ai ดู [audio/CREDITS.md](audio/CREDITS.md)
 - **ภาพพื้นผิวดาว** ใน `textures/`: ไม่อยู่ใต้ MIT เป็นของ Solar System Scope (CC BY 4.0, อ้างอิงข้อมูล NASA) และ three.js (MIT) — ดู [textures/CREDITS.md](textures/CREDITS.md) ถ้าเอาไปใช้ต่อ ให้คงเครดิตไว้
 
 ---
@@ -66,6 +79,8 @@ Two browser-based 3D space pieces, written with **Claude Opus 5.5** and given aw
 
 - **The Cosmic Calendar 3D** (`cosmic.html`): 13.8 billion years squeezed into one calendar year. A 21-scene, ~3.5-minute film from the Big Bang to the Pale Blue Dot, with Thai/English captions and a generative Web Audio score.
 - **Solar System Explorer** (`solar.html`): an interactive classroom. Planet positions for any date come from JPL J2000 orbital elements. Includes a guided tour, per-planet lessons, size comparisons, weight, age and travel-time calculators, a light-travel visualisation, a timeline and quizzes.
+
+Both pages now have Thai narration (ElevenLabs Eleven v4, generated through fal.ai) and recorded sound effects, and a WebXR mode for headsets such as Meta Quest 2: the Solar System becomes a tabletop model you can fly into, and the Cosmic Calendar plays on a curved cinema screen.
 
 It's plain static files with no build step. Serve the folder (`python3 -m http.server`) and open it in a browser; `file://` won't load the modules. Code is MIT. Textures are CC BY 4.0 (Solar System Scope) or MIT (three.js), and their credits must travel with them.
 

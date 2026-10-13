@@ -1,5 +1,7 @@
 import { SolarScene } from './solar-3d.js';
 import { makeTools, orb, fmt, thDate, store, ORDER, C, durTxt } from './solar-tools-v2.js';
+import { SolarAudio, VO, VO_TEXT } from './solar-audio.js';
+import { initSolarVR } from './solar-vr.js';
 const S = window.SOLAR;
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const isMobile = () => innerWidth <= 900;
@@ -17,6 +19,15 @@ const scene = new SolarScene($('#gl'), $('#labels'), {
   onSelect: id => { if (tour.on) tour.stop(); select(id); },
   onLight: (t, r) => light.tick(t, r)
 });
+
+// ---------------- sound ----------------
+const audio = new SolarAudio();
+const SND_ON='<svg class="ic" viewBox="0 0 16 16"><path d="M2.5 6v4h2.7L9 13V3L5.2 6z" fill="currentColor" stroke="none"/><path d="M11.2 5.4a3.6 3.6 0 0 1 0 5.2M12.9 3.7a6 6 0 0 1 0 8.6"/></svg>',
+      SND_OFF='<svg class="ic" viewBox="0 0 16 16"><path d="M2.5 6v4h2.7L9 13V3L5.2 6z" fill="currentColor" stroke="none"/><path d="M11.3 6.2l3.4 3.6M14.7 6.2l-3.4 3.6"/></svg>';
+function soundUI(){ const b=$('#b-sound'); b.innerHTML=audio.on?SND_ON:SND_OFF; b.classList.toggle('off',!audio.on); b.title=audio.on?'ปิดเสียง (M)':'เปิดเสียง (M)'; }
+$('#b-sound').onclick=()=>{ audio.init(); audio.setOn(!audio.on); soundUI(); };
+soundUI();
+['pointerdown','keydown'].forEach(ev=>addEventListener(ev,()=>audio.init(),{once:true,capture:true}));
 
 // ---------------- sheet (modal) ----------------
 function openSheet(html, {w=880}={}){
@@ -57,9 +68,10 @@ function select(id){
   renderPanel(S.byId(id));
   $('#panel').classList.add('open'); document.body.classList.add('panel-open');
   hideHint(); syncOffset(); scene.focusOn(id);
+  audio.focusBed(id); audio.sfx('sol-whoosh',0.45); if(!tour.on&&audio.voiceId&&audio.voiceId!==id) audio.stopVoice();
 }
-function overview(){ closePanel(); focusId=null; markDock(null); scene.focusOn(null); }
-function closePanel(){ $('#panel').classList.remove('open'); document.body.classList.remove('panel-open'); current=null; syncOffset(); }
+function overview(){ closePanel(); focusId=null; markDock(null); scene.focusOn(null); audio.focusBed(null); }
+function closePanel(){ if(!tour.on) audio.stopVoice(); $('#panel').classList.remove('open'); document.body.classList.remove('panel-open'); current=null; syncOffset(); }
 function syncOffset(){
   if (!$('#panel').classList.contains('open')) return scene.setPanelOffset(0);
   if (isMobile()) scene.setPanelOffset($('#panel').offsetHeight, 'bottom');
@@ -90,12 +102,13 @@ function renderPanel(b){
         <dl class="p-keys">${keyStats(b).map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl></header>
       <nav class="p-tabs">${TABS.map(([k,l])=>`<button data-tab="${k}"${k===tab?' class="on"':''}>${l}</button>`).join('')}</nav>
       <div class="p-body" id="pbody"></div>
-      <footer class="p-foot">${nq?`<button class="btn primary" data-quiz>ทำแบบทดสอบ · ${nq} ข้อ</button>`:''}<button class="btn" data-next>ถัดไป: ${nx.th} ${IC.next}</button></footer>
+      <footer class="p-foot"><button class="btn" data-listen>${SND_ON}<span>ฟังบรรยาย</span></button>${nq?`<button class="btn primary" data-quiz>ทำแบบทดสอบ · ${nq} ข้อ</button>`:''}<button class="btn" data-next>ถัดไป: ${nx.th} ${IC.next}</button></footer>
     </div>`;
   p.querySelector('.pclose').onclick=closePanel;
   p.querySelectorAll('[data-nav]').forEach(x=>x.onclick=()=>stepBody(+x.dataset.nav));
   p.querySelector('[data-next]').onclick=()=>stepBody(1);
   const q=p.querySelector('[data-quiz]'); if(q) q.onclick=()=>tools.quiz(b.id);
+  p.querySelector('[data-listen]').onclick=()=>{ audio.init(); if(!audio.on){ audio.setOn(true); soundUI(); } audio.voiceId===b.id?audio.stopVoice():audio.narrate(b.id); };
   p.querySelectorAll('[data-tab]').forEach(x=>x.onclick=()=>{ tab=x.dataset.tab; store.set('tab',tab); p.querySelectorAll('[data-tab]').forEach(y=>y.classList.toggle('on',y===x)); drawTab(b); });
   drawTab(b);
 }
@@ -173,20 +186,21 @@ new ResizeObserver(()=>document.documentElement.style.setProperty('--deckH',$('#
 
 // ---------------- guided tour ----------------
 const tour={on:false,i:0,paused:false,t:0,dur:12000,last:0,
-  steps:[{id:null,title:'ระบบสุริยะของเรา',en:'Our Solar System',text:'ดาวฤกษ์หนึ่งดวง ดาวเคราะห์แปดดวง และวัตถุขนาดเล็กอีกนับล้านชิ้น โคจรอยู่ด้วยกันมาราว 4,600 ล้านปี ตำแหน่งดาวทุกดวงในภาพนี้คำนวณจากวันที่จริง'},
-    ...ORDER.map(id=>{ const b=S.byId(id); return {id,title:b.th,en:b.en,text:b.tagline+' — '+b.facts[0]}; })],
-  start(){ if(light.on) light.stop(); closeSheet(); closePanel(); hideHint(); this.on=true; this.paused=false;
+  steps:[{id:null,title:'ระบบสุริยะของเรา',en:'Our Solar System',text:VO_TEXT.overview},
+    ...ORDER.map(id=>{ const b=S.byId(id); return {id,title:b.th,en:b.en,text:VO_TEXT[id]||b.tagline+' — '+b.facts[0]}; })],
+  start(){ if(light.on) light.stop(); closeSheet(); closePanel(); hideHint(); this.on=true; this.paused=false; audio.init(); audio.sfx('sol-tour',0.8);
     document.body.classList.add('touring'); $('#tour').classList.add('on'); $('#b-tour').classList.add('on'); scene.setAutoRotate(true);
     this.go(0); this.last=performance.now(); requestAnimationFrame(tourLoop); },
   go(i){ if(i>=this.steps.length) return this.stop(); this.i=Math.max(0,i); this.t=0; const s=this.steps[this.i];
-    focusId=s.id; markDock(s.id); scene.focusOn(s.id);
+    focusId=s.id; markDock(s.id); scene.focusOn(s.id); audio.focusBed(s.id);
+    const vo=s.id||'overview'; this.dur=((VO[vo]||10.4)+1.6)*1000; if(this.paused) audio.stopVoice(); else audio.narrate(vo);
     $('#t-step').textContent=String(this.i+1).padStart(2,'0')+' / '+String(this.steps.length).padStart(2,'0');
     const tx=$('#t-txt'); tx.classList.remove('in'); void tx.offsetWidth; tx.classList.add('in');
     $('#t-title').innerHTML=`${s.title}<small>${s.en}</small>`; $('#t-text').textContent=s.text; this.setIcon(); },
   next(){ this.go(this.i+1); }, prev(){ this.go(this.i-1); },
-  toggle(){ this.paused=!this.paused; this.setIcon(); },
+  toggle(){ this.paused=!this.paused; this.setIcon(); const vo=this.steps[this.i].id||'overview'; this.paused?audio.stopVoice():audio.narrate(vo,null,this.t/1000); },
   setIcon(){ $('#t-pause').innerHTML=this.paused?IC.play:IC.pause; },
-  stop(){ if(!this.on) return; this.on=false; document.body.classList.remove('touring'); $('#tour').classList.remove('on'); $('#b-tour').classList.remove('on'); scene.setAutoRotate(false); }
+  stop(){ if(!this.on) return; this.on=false; audio.stopVoice(); document.body.classList.remove('touring'); $('#tour').classList.remove('on'); $('#b-tour').classList.remove('on'); scene.setAutoRotate(false); }
 };
 function tourLoop(now){ if(!tour.on) return; const dt=now-tour.last; tour.last=now; if(!tour.paused){ tour.t+=dt; if(tour.t>=tour.dur) tour.next(); }
   $('#t-bar').style.width=Math.min(100,tour.t/tour.dur*100)+'%'; requestAnimationFrame(tourLoop); }
@@ -237,10 +251,19 @@ addEventListener('keydown',e=>{
   else if (k==='KeyT') tour.on?tour.stop():tour.start();
   else if (k==='KeyL') light.on?light.stop():light.start();
   else if (k==='KeyF') fullscreen();
+  else if (k==='KeyM') $('#b-sound').click();
   else if (k==='KeyH') bare();
   else if (e.key==='?') tools.help();
   else if (k==='Escape'){ if(document.body.classList.contains('bare')) bare(); else if(tour.on) tour.stop(); else if(light.on) light.stop(); else closePanel(); }
 });
+
+// ---------------- VR (WebXR, e.g. Meta Quest) ----------------
+initSolarVR({ scene, S, ORDER, audio, button: $('#b-vr'),
+  onEnter: () => { if (tour.on) tour.stop(); if (light.on) light.stop(); closeSheet(); closePanel(); hideHint(); document.body.classList.add('in-vr'); },
+  onExit: () => { document.body.classList.remove('in-vr'); $$('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===scene.mode)); overview(); }
+});
+
+window.__ss={scene,audio,tour}; // read-only handle for automated checks
 
 // ---------------- start ----------------
 markDock(null);

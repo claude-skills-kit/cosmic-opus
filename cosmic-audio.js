@@ -22,6 +22,7 @@
      toggle()          flip enabled, returns new state
      isEnabled()       current mute state
      isReady()         context exists
+     setDuck(bool)     dip the whole score under narration
 ============================================================================ */
 window.CosmicAudio = (function () {
   "use strict";
@@ -65,7 +66,7 @@ window.CosmicAudio = (function () {
   const VOICES = 5;          // pad voice count
   const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 
-  let ctx, master, limiter, dryBus, wetBus, reverb, reverbSend;
+  let ctx, master, duck, limiter, dryBus, wetBus, reverb, reverbSend;
   let padFilter, voices = [], sub, subFilter;
   let noiseSrc, texFilter, texGain, texLFO, texLFOGain;
   let started = false, enabled = true, playing = false;
@@ -107,7 +108,8 @@ window.CosmicAudio = (function () {
     limiter = ctx.createDynamicsCompressor();
     limiter.threshold.value = -10; limiter.knee.value = 8; limiter.ratio.value = 12;
     limiter.attack.value = 0.004;  limiter.release.value = 0.25;
-    master.connect(limiter); limiter.connect(ctx.destination);
+    duck = ctx.createGain(); duck.gain.value = 1;
+    master.connect(duck); duck.connect(limiter); limiter.connect(ctx.destination);
 
     dryBus = ctx.createGain(); dryBus.gain.value = 1.0; dryBus.connect(master);
     wetBus = ctx.createGain(); wetBus.gain.value = 0.9; wetBus.connect(master);
@@ -314,6 +316,7 @@ window.CosmicAudio = (function () {
     ramp(master.gain, e ? (playing ? VOL : VOL * 0.22) : 0.0001, 0.4);
   }
   function toggle() { setEnabled(!enabled); return enabled; }
+  function setDuck(on) { if (started) duck.gain.setTargetAtTime(on ? 0.42 : 1, ctx.currentTime, on ? 0.15 : 0.8); }
 
   // set the bed AND fire the scene's entrance SFX (used on real scene transitions)
   function enterScene(id) {
@@ -329,6 +332,7 @@ window.CosmicAudio = (function () {
     trigger: trigger,
     setPlaying: setPlaying,
     setEnabled: setEnabled,
+    setDuck: setDuck,
     toggle: toggle,
     isEnabled: function () { return enabled; },
     isReady: function () { return started; }

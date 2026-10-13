@@ -1,0 +1,107 @@
+{
+ "bigbang": {
+  "file": "audio/vo/cosmic/01-bigbang.mp3",
+  "dur": 8.74,
+  "speech": 8.6
+ },
+ "cmb": {
+  "file": "audio/vo/cosmic/02-cmb.mp3",
+  "dur": 12.05,
+  "speech": 11.68
+ },
+ "stars": {
+  "file": "audio/vo/cosmic/03-stars.mp3",
+  "dur": 8.4,
+  "speech": 8.48
+ },
+ "supernova": {
+  "file": "audio/vo/cosmic/04-supernova.mp3",
+  "dur": 12.67,
+  "speech": 12.32
+ },
+ "galaxy": {
+  "file": "audio/vo/cosmic/05-galaxy.mp3",
+  "dur": 8.66,
+  "speech": 8.72
+ },
+ "blackhole": {
+  "file": "audio/vo/cosmic/06-blackhole.mp3",
+  "dur": 9.78,
+  "speech": 9.48
+ },
+ "sunbirth": {
+  "file": "audio/vo/cosmic/07-sunbirth.mp3",
+  "dur": 9.39,
+  "speech": 9.36
+ },
+ "disk": {
+  "file": "audio/vo/cosmic/08-disk.mp3",
+  "dur": 7.84,
+  "speech": 7.48
+ },
+ "solar": {
+  "file": "audio/vo/cosmic/09-solar.mp3",
+  "dur": 5.46,
+  "speech": 5.44
+ },
+ "theia": {
+  "file": "audio/vo/cosmic/10-theia.mp3",
+  "dur": 9.46,
+  "speech": 9.12
+ },
+ "bombardment": {
+  "file": "audio/vo/cosmic/11-bombardment.mp3",
+  "dur": 9.06,
+  "speech": 9.04
+ },
+ "firstlife": {
+  "file": "audio/vo/cosmic/12-firstlife.mp3",
+  "dur": 7.45,
+  "speech": 7.44
+ },
+ "oxygen": {
+  "file": "audio/vo/cosmic/13-oxygen.mp3",
+  "dur": 9.65,
+  "speech": 9.52
+ },
+ "snowball": {
+  "file": "audio/vo/cosmic/14-snowball.mp3",
+  "dur": 8.28,
+  "speech": 7.92
+ },
+ "cambrian": {
+  "file": "audio/vo/cosmic/15-cambrian.mp3",
+  "dur": 8.14,
+  "speech": 8.08
+ },
+ "dinosaurs": {
+  "file": "audio/vo/cosmic/16-dinosaurs.mp3",
+  "dur": 11.97,
+  "speech": 11.6
+ },
+ "humans": {
+  "file": "audio/vo/cosmic/17-humans.mp3",
+  "dur": 6.55,
+  "speech": 6.64
+ },
+ "civilization": {
+  "file": "audio/vo/cosmic/18-civilization.mp3",
+  "dur": 8.56,
+  "speech": 8.44
+ },
+ "spaceage": {
+  "file": "audio/vo/cosmic/19-spaceage.mp3",
+  "dur": 8.05,
+  "speech": 8.04
+ },
+ "moon": {
+  "file": "audio/vo/cosmic/20-moon.mp3",
+  "dur": 7.28,
+  "speech": 6.84
+ },
+ "paleblue": {
+  "file": "audio/vo/cosmic/21-paleblue.mp3",
+  "dur": 12.278,
+  "speech": 12.24
+ }
+}

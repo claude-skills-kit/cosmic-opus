@@ -65,6 +65,10 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:5px;b
 .tb.primary:hover{background:var(--accent-hi)}
 .tb.primary.on{background:var(--ink);color:#111}
 .sys{display:flex;gap:6px}
+#b-sound.off{color:var(--ink-3)}
+.tb.vr{color:var(--accent-hi);box-shadow:inset 0 0 0 1px rgba(244,169,92,.45)}.tb.vr:hover{background:rgba(244,169,92,.14);color:#fff}
+.in-vr #top,.in-vr #deck,.in-vr #hint{opacity:.35;pointer-events:none}
+.p-foot .btn .ic{width:15px;height:15px;margin-right:6px;vertical-align:-2px}
 .ib{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2);font-size:15px;font-weight:500}
 .ib:hover{color:var(--ink);border-color:var(--line-2)}
 
@@ -386,13 +390,14 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:5px;b
   <div class="brand"><div class="mark"></div><div><h1>ระบบสุริยะ</h1><p>The Solar System · ห้องเรียนอวกาศ</p></div></div>
   <nav class="tools glass">
     <button class="tb primary" id="b-tour" title="ทัวร์นำชม (T)"><svg class="ic" viewBox="0 0 16 16"><path d="M5 3.2v9.6L12.8 8z" fill="currentColor" stroke="none"></path></svg><span>ทัวร์นำชม</span></button>
+    <button class="tb vr" id="b-vr" hidden title="เข้าโหมด VR (แว่น Meta Quest)"><svg class="ic" viewBox="0 0 16 16"><path d="M1.6 5.2c0-.8.6-1.4 1.4-1.4h10c.8 0 1.4.6 1.4 1.4v4.9c0 .8-.6 1.4-1.4 1.4h-2.7l-1.4-2a1 1 0 0 0-1.6 0l-1.4 2H3c-.8 0-1.4-.6-1.4-1.4z"/></svg><span>เข้าโหมด VR</span></button>
     <button class="tb" data-tool="compare" title="เทียบขนาดดาว"><svg class="ic" viewBox="0 0 16 16"><circle cx="5.5" cy="9" r="4"></circle><circle cx="12.5" cy="10.5" r="2"></circle></svg><span>เทียบขนาด</span></button>
     <button class="tb" data-tool="calc" title="เครื่องคำนวณ"><svg class="ic" viewBox="0 0 16 16"><rect x="3" y="1.8" width="10" height="12.4" rx="2"></rect><path d="M5.6 5h4.8M5.8 8.4h.4M9.8 8.4h.4M5.8 11.4h.4M9.8 11.4h.4"></path></svg><span>เครื่องคำนวณ</span></button>
     <button class="tb" data-tool="light" title="แสงเดินทาง (L)"><svg class="ic" viewBox="0 0 16 16"><circle cx="3.8" cy="8" r="2.1"></circle><path d="M7.6 8h6.4M7.3 5.2l5.6-2.2M7.3 10.8l5.6 2.2"></path></svg><span>แสงเดินทาง</span></button>
     <button class="tb" data-tool="timeline" title="ไทม์ไลน์การสำรวจ"><svg class="ic" viewBox="0 0 16 16"><path d="M1.8 8h12.4"></path><circle cx="4" cy="8" r="1.5"></circle><circle cx="8" cy="8" r="1.5"></circle><circle cx="12" cy="8" r="1.5"></circle></svg><span>ไทม์ไลน์</span></button>
     <button class="tb" data-tool="quiz" title="แบบทดสอบรวม"><svg class="ic" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.4"></circle><path d="M6.1 6.3a1.95 1.95 0 1 1 2.7 1.8c-.55.25-.8.65-.8 1.25M8 11.4v.1"></path></svg><span>แบบทดสอบ</span></button>
   </nav>
-  <div class="sys"><button class="ib glass" id="b-help" title="วิธีใช้และคีย์ลัด (?)">?</button><button class="ib glass" id="b-full" title="เต็มจอ (F)"><svg class="ic" viewBox="0 0 16 16"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"></path></svg></button></div>
+  <div class="sys"><button class="ib glass" id="b-sound" title="เสียง (M)"></button><button class="ib glass" id="b-help" title="วิธีใช้และคีย์ลัด (?)">?</button><button class="ib glass" id="b-full" title="เต็มจอ (F)"><svg class="ic" viewBox="0 0 16 16"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"></path></svg></button></div>
 </header>
 
 <div id="deck">

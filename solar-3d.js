@@ -223,9 +223,11 @@ export class SolarScene {
     this.renderer=new THREE.WebGLRenderer({canvas,antialias:true,logarithmicDepthBuffer:true,powerPreference:'high-performance'});
     this.renderer.setPixelRatio(Math.min(devicePixelRatio,2));
     this.renderer.toneMapping=THREE.ACESFilmicToneMapping; this.renderer.toneMappingExposure=1.05;
+    this.renderer.xr.enabled=true; this.onXRFrame=null; this._cw=new THREE.Vector3();
     this.scene=new THREE.Scene();
     this.camera=new THREE.PerspectiveCamera(48,1,0.001,200000);
     this.camera.position.set(0,38,70);
+    this.rig=new THREE.Group(); this.rig.add(this.camera); this.scene.add(this.rig); // identity on screen; VR moves and scales it
     this.controls=new OrbitControls(this.camera,canvas);
     this.controls.enableDamping=true; this.controls.dampingFactor=0.055; this.controls.rotateSpeed=0.75;
     this.controls.enableZoom=false; this.controls.minDistance=0; this.controls.maxDistance=Infinity;
@@ -244,7 +246,7 @@ export class SolarScene {
     canvas.addEventListener('pointerup',e=>{ if(!this._down) return; const d=Math.hypot(e.clientX-this._down.x,e.clientY-this._down.y); if(d<5) this._pick(e); });
     this.clock=new THREE.Clock();
     new ResizeObserver(()=>this.resize()).observe(canvas.parentElement);
-    this.resize(); this._loop();
+    this.resize(); this.renderer.setAnimationLoop(()=>this._loop()); // also drives WebXR frames
   }
 
   // ---------- smooth, clamped zoom (wheel + pinch) ----------
@@ -314,11 +316,11 @@ export class SolarScene {
     g.setAttribute('color',new THREE.BufferAttribute(col,3));
     g.setAttribute('aSize',new THREE.BufferAttribute(sz,1));
     const m=new THREE.ShaderMaterial({
-      uniforms:{uT:{value:0}},
-      vertexShader:`attribute float aSize; varying vec3 vC; varying float vTw; uniform float uT;
+      uniforms:{uT:{value:0},uS:{value:1}},
+      vertexShader:`attribute float aSize; varying vec3 vC; varying float vTw; uniform float uT,uS;
         void main(){ vC=color; vec4 mv=modelViewMatrix*vec4(position,1.);
         vTw=0.78+0.22*sin(uT*1.6+position.x*0.0007+position.y*0.0011);
-        gl_Position=projectionMatrix*mv; gl_PointSize=aSize*(1.0/-mv.z)*40.0; }`,
+        gl_Position=projectionMatrix*mv; gl_PointSize=aSize*(1.0/(-mv.z*uS))*40.0; }`,
       fragmentShader:`varying vec3 vC; varying float vTw;
         void main(){ vec2 d=gl_PointCoord-0.5; float r=length(d); if(r>0.5) discard;
         float a=pow(1.0-r*2.0,2.2); gl_FragColor=vec4(vC*vTw,a); }`,
@@ -446,6 +448,7 @@ export class SolarScene {
 
   setPanelOffset(px,side='left'){ this.panelPx=px; this.panelSide=side; this.resize(); }
   resize(){
+    if(this.renderer.xr.isPresenting) return;
     const p=this.canvas.parentElement, w=p.clientWidth, h=p.clientHeight;
     this.renderer.setSize(w,h,false);
     if(this.composer){ this.composer.setSize(w,h); this.bloom.setSize(w,h); }
@@ -524,8 +527,9 @@ void main(){
   labelOf(id){ const it=this.items.find(i=>i.b.id===id); return it&&it.label; }
 
   _loop(){
-    requestAnimationFrame(()=>this._loop());
-    const dt=Math.min(this.clock.getDelta(),0.1), now=performance.now()/1000;
+    const dt=Math.min(this.clock.getDelta(),0.1), now=performance.now()/1000, xr=this.renderer.xr.isPresenting;
+    const cw=this.camera.getWorldPosition(this._cw);
+    const spr=xr?1/this.rig.scale.x:1; // sprites offset their corners in view space, so a scaled rig would blow them up
     if(this.playing) this.date=new Date(this.date.getTime()+dt*this.speed*86400000);
     const T=S.julianCenturies(this.date);
     const daysTotal=this.date.getTime()/86400000;
@@ -533,9 +537,9 @@ void main(){
     for(const it of this.items){
       const b=it.b, rad=this.radiusFor(b);
       it.pivot.scale.setScalar(rad);
-      if(it.glow) it.glow.scale.setScalar(rad*(this.mode==='true'?7:4.5));
-      if(it.halo){ const near=this.camera.position.distanceTo(it.holder.position);
-        it.halo.scale.setScalar(rad*3.4); it.halo.material.opacity=Math.max(0,Math.min(0.4,near/(rad*260))); }
+      if(it.glow) it.glow.scale.setScalar(rad*(this.mode==='true'?7:4.5)*spr);
+      if(it.halo){ const near=cw.distanceTo(it.holder.position);
+        it.halo.scale.setScalar(rad*3.4*spr); it.halo.material.opacity=Math.max(0,Math.min(0.4,near/(rad*260))); }
       if(b.el){
         const h=S.heliocentric(b.el,T), r=Math.hypot(h.x,h.y,h.z), k=this.distFor(r)/r;
         it.holder.position.set(h.x*k,h.z*k,-h.y*k);
@@ -569,8 +573,8 @@ void main(){
       if(b.kind==='star') it.mat.uniforms.uTime.value=now;
     }
     this.stars.material.uniforms.uT.value=now;
-    this.sky.position.copy(this.camera.position);
-    if(this.belts){ const days=T*36525, px=this.renderer.getPixelRatio();
+    this.sky.position.copy(cw); this.stars.material.uniforms.uS.value=xr?this.rig.scale.x:1;
+    if(this.belts){ const days=T*36525, px=xr?1:this.renderer.getPixelRatio();
       for(const p of this.belts){ const u=p.material.uniforms; u.uDays.value=days; u.uTrue.value=this.mode==='true'?1:0; u.uPx.value=px; p.visible=this.showBelts; } }
     if(this.light&&this.light.on){
       const L=this.light; L.t+=dt*L.factor;
@@ -580,11 +584,12 @@ void main(){
       if(this.onLight) this.onLight(L.t,rAU);
     }
     if(this.haze){ const s=this.distFor(30.07)*1.35; this.haze.scale.set(s,s,1);
-      const cp=this.camera.position, h=Math.abs(cp.y)/Math.max(cp.length(),1e-6);
+      const cp=cw, h=Math.abs(cp.y)/Math.max(cp.length(),1e-6);
       const tgt=this.focus?0:0.5*THREE.MathUtils.smoothstep(h,0.2,0.55);
       this.haze.material.opacity+=(tgt-this.haze.material.opacity)*Math.min(1,dt*4);
       this.haze.visible=this.haze.material.opacity>0.005; }
     this.film.uniforms.uT.value=now;
+    if(xr){ if(this.onXRFrame) this.onXRFrame(dt); this.renderer.render(this.scene,this.camera); return; } // no post passes in a headset
 
     if(this._tw){
       const tw=this._tw; tw.t=Math.min(1,tw.t+dt/1.35);

@@ -116,6 +116,7 @@ export function createStage(canvas){
   const sun=new THREE.DirectionalLight(0xfff1e0,2.4); sun.position.set(5,1,3); scene.add(sun);
   const amb=new THREE.AmbientLight(0x2a3450,0.25); scene.add(amb);
   function resize(){
+    if(renderer.xr.isPresenting) return; // the headset owns the size; VR sets the film buffers itself
     const w=innerWidth,h=innerHeight; renderer.setSize(w,h); composer.setSize(w,h); bloom.setSize(w,h);
     camera.aspect=w/h; camera.updateProjectionMatrix();
     GU.uPx.value=renderer.getPixelRatio();
