@@ -149,7 +149,8 @@ const LANGS=['both','th','en'], LL={both:'ไทย + EN',th:'ไทย',en:'EN'
 function applyLang(){ document.body.dataset.lang=lang; $('#b-lang').textContent=LL[lang]; } applyLang();
 $('#b-lang').onclick=()=>{ lang=LANGS[(LANGS.indexOf(lang)+1)%3]; try{localStorage.setItem('cc19.lang',lang);}catch(e){} applyLang(); };
 let muted=false; try{ muted=localStorage.getItem('cc19.mute')==='1'; }catch(e){}
-function applyMute(){ $('#b-mute').classList.toggle('off',muted); if(window.CosmicAudio&&CosmicAudio.isReady()) CosmicAudio.setEnabled(!muted); kit.setEnabled(!muted); } applyMute();
+let narr=true; try{ narr=localStorage.getItem('cc19.vo')!=='0'; }catch(e){} // narration on/off (N); declared before applyMute reads it
+function applyMute(){ document.body.classList.toggle('vo-on',narr&&!muted); $('#b-mute').classList.toggle('off',muted); if(window.CosmicAudio&&CosmicAudio.isReady()) CosmicAudio.setEnabled(!muted); kit.setEnabled(!muted); } applyMute();
 $('#b-mute').onclick=()=>{ muted=!muted; try{localStorage.setItem('cc19.mute',muted?'1':'0');}catch(e){} applyMute(); };
 const fs=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.().catch(()=>{});
 $('#b-fs').onclick=fs;
@@ -168,8 +169,7 @@ addEventListener('keydown',e=>{
 });
 
 // ---------------------------------------------------------------- narration + recorded effects
-let narr=true; try{ narr=localStorage.getItem('cc19.vo')!=='0'; }catch(e){}
-function applyVO(){ $('#b-vo').classList.toggle('off',!narr); $('#b-vo').title=narr?'ปิดเสียงบรรยาย (N)':'เปิดเสียงบรรยาย (N)'; }
+function applyVO(){ document.body.classList.toggle('vo-on',narr&&!muted); $('#b-vo').classList.toggle('off',!narr); $('#b-vo').title=narr?'ปิดเสียงบรรยาย (N)':'เปิดเสียงบรรยาย (N)'; }
 $('#b-vo').onclick=()=>{ narr=!narr; try{localStorage.setItem('cc19.vo',narr?'1':'0');}catch(e){} applyVO(); if(!narr) voStop(); }; applyVO();
 let voH=null, voI=-1, voDone=-1, fxI=-1, fxNext=0, fxLive=[];
 const duckScore=on=>{ if(window.CosmicAudio&&CosmicAudio.isReady()) CosmicAudio.setDuck(on); };

@@ -5,6 +5,14 @@ import * as THREE from 'three';
 
 export const xrSupported = () => navigator.xr && window.isSecureContext
   ? navigator.xr.isSessionSupported('immersive-vr').catch(() => false) : Promise.resolve(false);
+// Android Chrome also reports immersive-vr support (Cardboard-style), but a phone held in the hand
+// can't use this UI, so the button shows only on headset browsers (Quest Browser carries
+// "OculusBrowser" and a "Quest N" token) and desktops. ?vr=1 forces it for testing.
+export const vrOffered = () => {
+  const ua = navigator.userAgent, force = /[?&]vr=1\b/.test(location.search);
+  const headset = /OculusBrowser|Quest|Pico|Wolvic|\bVR\b/i.test(ua), phone = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  return xrSupported().then(ok => ok && (force || headset || !phone));
+};
 
 export async function startXR(renderer, { scale = 1, onEnd } = {}) {
   const session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'] });

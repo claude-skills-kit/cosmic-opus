@@ -3,7 +3,7 @@
 // Visit: fade-teleport to a body at life-like scale (1 unit = 1 m), with its narration and ambience.
 // UI lives in tracking space under the rig: a waist-high dock that lazily follows your gaze and an info card.
 import * as THREE from 'three';
-import { xrSupported, startXR, fontsReady, Panel, wrap, roundRect, makePointers, aim, Pads, Fade, headLocal, FONT } from './vr-kit.js';
+import { vrOffered, startXR, fontsReady, Panel, wrap, roundRect, makePointers, aim, Pads, Fade, headLocal, FONT } from './vr-kit.js';
 import { VO } from './solar-audio.js';
 
 const TABLE = 60;                        // rig scale for the tabletop overview
@@ -24,7 +24,7 @@ export function initSolarVR({ scene, S, ORDER, audio, button, onEnter, onExit })
   const itemOf = id => scene.items.find(i => i.b.id === id);
   const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), hw = new THREE.Vector3();
 
-  xrSupported().then(ok => { if (ok) button.hidden = false; });
+  vrOffered().then(ok => { if (ok) button.hidden = false; });
   button.addEventListener('click', enter);
 
   async function enter() {

@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <title>ระบบสุริยะ — ห้องเรียนอวกาศ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -66,6 +67,7 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:5px;b
 .tb.primary.on{background:var(--ink);color:#111}
 .sys{display:flex;gap:6px}
 #b-sound.off{color:var(--ink-3)}
+#t-cc{display:none}#t-cc.on{color:var(--accent-hi)}
 .tb.vr{color:var(--accent-hi);box-shadow:inset 0 0 0 1px rgba(244,169,92,.45)}.tb.vr:hover{background:rgba(244,169,92,.14);color:#fff}
 .in-vr #top,.in-vr #deck,.in-vr #hint{opacity:.35;pointer-events:none}
 .p-foot .btn .ic{width:15px;height:15px;margin-right:6px;vertical-align:-2px}
@@ -375,8 +377,27 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:5px;b
   .ps-it.sat{padding:0 30px}
   #hint{white-space:normal;text-align:center;width:max-content;max-width:calc(100% - 32px);border-radius:14px}
 }
+@media (max-width:760px){
+  /* phones: the narrator carries the tour, so the paragraph goes unless sound is off or the reader asks for it */
+  body.vo-on:not(.show-text) #t-text{display:none}
+  #t-cc{display:grid}
+  .t-row{gap:2px}
+  .t-row button{white-space:nowrap;padding:0 8px}
+  /* short labels so step, transport and the three text buttons fit one row at 360 px */
+  #t-cc,#t-open,#t-exit{font-size:0}
+  #t-cc::before{content:'Aa';font-size:12.5px}
+  #t-open::before{content:'บทเรียน';font-size:12px}
+  #t-exit::before{content:'✕';font-size:14px}
+}
 @media (max-width:560px){
   .view .tog{display:none}
+  /* one tap-to-switch button instead of a two-label segment, so the date card isn't overlapped */
+  .view .seg button:not(.on){display:none}
+  .view .seg button{font-size:0;white-space:nowrap}
+  .view .seg button::before{content:attr(data-short) " ⇄";font-size:12px}
+  /* the date card and the view switch share one row; drop the extras so they never overlap */
+  #today,#speedlabel{display:none}
+  .card.time{min-width:0;max-width:100%;overflow:hidden}
   .speedrow #speed{width:84px}
   .datebtn small{display:none}
   .p-keys dd{font-size:15px}
@@ -411,7 +432,7 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:5px;b
   </div>
   <div class="card glass dock" id="dock"></div>
   <div class="card glass view">
-    <div class="seg"><button class="on" data-mode="map">ย่อให้เห็นทั้งระบบ</button><button data-mode="true">สเกลจริง</button></div>
+    <div class="seg"><button class="on" data-mode="map" data-short="ย่อทั้งระบบ">ย่อให้เห็นทั้งระบบ</button><button data-mode="true" data-short="สเกลจริง">สเกลจริง</button></div>
     <div class="tog"><button class="on" data-tog="orbits" title="วงโคจร"><i></i><span>วงโคจร</span></button><button class="on" data-tog="labels" title="ชื่อดาว"><i></i><span>ชื่อดาว</span></button><button class="on" data-tog="belts" title="แถบดาวเคราะห์น้อยและแถบไคเปอร์"><i></i><span>แถบดาวเคราะห์น้อย</span></button></div>
   </div>
 </div>
@@ -420,7 +441,7 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:5px;b
 
 <div id="tour" class="glass">
   <div class="t-prog"><i id="t-bar"></i></div>
-  <div class="t-row"><span class="t-step" id="t-step"></span><button id="t-prev" title="ก่อนหน้า (←)"></button><button id="t-pause" title="หยุด / เล่น (Space)"></button><button id="t-next" title="ถัดไป (→)"></button><button id="t-open">อ่านบทเรียน</button><button id="t-exit">จบทัวร์</button></div>
+  <div class="t-row"><span class="t-step" id="t-step"></span><button id="t-prev" title="ก่อนหน้า (←)"></button><button id="t-pause" title="หยุด / เล่น (Space)"></button><button id="t-next" title="ถัดไป (→)"></button><button id="t-cc" title="แสดงข้อความ">ข้อความ</button><button id="t-open">อ่านบทเรียน</button><button id="t-exit">จบทัวร์</button></div>
   <div id="t-txt"><h3 id="t-title"></h3><p id="t-text"></p></div>
 </div>
 

@@ -3,7 +3,7 @@
 // so it stays on the screen. Each frame the film renders through its full post chain (bloom, grade,
 // dissolves) mono at 1280×720 into an offscreen buffer, then the cinema is drawn in stereo around you.
 import * as THREE from 'three';
-import { xrSupported, startXR, fontsReady, Panel, wrap, roundRect, Pads, headLocal, FONT } from './vr-kit.js';
+import { vrOffered, startXR, fontsReady, Panel, wrap, roundRect, Pads, headLocal, FONT } from './vr-kit.js';
 
 const FILM_W = 1280, FILM_H = 720;
 const RADIUS = 5, ARC = 1.05, SCREEN_H = RADIUS * ARC * 9 / 16, SCREEN_Y = 1.6;   // ≈ 60° wide, 2.95 m tall
@@ -14,7 +14,7 @@ export function initCosmicVR({ stage, buttons, getCap, onEnter, onExit, onPlay, 
   let session = null, built = false, cinema, rig, cam, screen, sub, pads = new Pads(), lastKey = '', placeIn = 0;
   const api = { active: false, filmH: FILM_H, present };
 
-  xrSupported().then(ok => { if (ok) buttons.forEach(b => b.hidden = false); });
+  vrOffered().then(ok => { if (ok) buttons.forEach(b => b.hidden = false); });
   buttons.forEach(b => b.addEventListener('click', enter));
 
   function build() {

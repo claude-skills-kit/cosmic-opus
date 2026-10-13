@@ -24,7 +24,7 @@ const scene = new SolarScene($('#gl'), $('#labels'), {
 const audio = new SolarAudio();
 const SND_ON='<svg class="ic" viewBox="0 0 16 16"><path d="M2.5 6v4h2.7L9 13V3L5.2 6z" fill="currentColor" stroke="none"/><path d="M11.2 5.4a3.6 3.6 0 0 1 0 5.2M12.9 3.7a6 6 0 0 1 0 8.6"/></svg>',
       SND_OFF='<svg class="ic" viewBox="0 0 16 16"><path d="M2.5 6v4h2.7L9 13V3L5.2 6z" fill="currentColor" stroke="none"/><path d="M11.3 6.2l3.4 3.6M14.7 6.2l-3.4 3.6"/></svg>';
-function soundUI(){ const b=$('#b-sound'); b.innerHTML=audio.on?SND_ON:SND_OFF; b.classList.toggle('off',!audio.on); b.title=audio.on?'ปิดเสียง (M)':'เปิดเสียง (M)'; }
+function soundUI(){ const b=$('#b-sound'); b.innerHTML=audio.on?SND_ON:SND_OFF; b.classList.toggle('off',!audio.on); b.title=audio.on?'ปิดเสียง (M)':'เปิดเสียง (M)'; document.body.classList.toggle('vo-on',audio.on); }
 $('#b-sound').onclick=()=>{ audio.init(); audio.setOn(!audio.on); soundUI(); };
 soundUI();
 ['pointerdown','keydown'].forEach(ev=>addEventListener(ev,()=>audio.init(),{once:true,capture:true}));
@@ -179,7 +179,10 @@ function syncDate(){ const d=scene.date; if(isNaN(d)) return; $('#d-th').textCon
 setInterval(syncDate,250); syncDate();
 dateField.onchange=()=>{ const d=new Date(dateField.value+'T12:00:00Z'); if(!isNaN(d)) scene.setDate(d); };
 $('#today').onclick=()=>{ scene.setDate(new Date()); syncDate(); };
-$$('[data-mode]').forEach(btn=>btn.onclick=()=>{ $$('[data-mode]').forEach(b=>b.classList.toggle('on',b===btn)); scene.setMode(btn.dataset.mode); });
+$$('[data-mode]').forEach(btn=>btn.onclick=()=>{
+  // on narrow screens only the active button shows, and tapping it flips to the other mode
+  let m=btn.dataset.mode; if(btn.classList.contains('on')&&matchMedia('(max-width:560px)').matches) m=m==='map'?'true':'map';
+  $$('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===m)); scene.setMode(m); });
 const toggles={orbits:v=>scene.setOrbits(v),labels:v=>scene.setLabels(v),belts:v=>scene.setBelts(v)};
 $$('[data-tog]').forEach(b=>b.onclick=()=>{ const on=!b.classList.contains('on'); b.classList.toggle('on',on); toggles[b.dataset.tog](on); });
 new ResizeObserver(()=>document.documentElement.style.setProperty('--deckH',$('#deck').offsetHeight+'px')).observe($('#deck'));
@@ -207,7 +210,11 @@ function tourLoop(now){ if(!tour.on) return; const dt=now-tour.last; tour.last=n
 $('#b-tour').onclick=()=>tour.on?tour.stop():tour.start();
 $('#t-prev').innerHTML=IC.prev; $('#t-next').innerHTML=IC.next;
 $('#t-prev').onclick=()=>tour.prev(); $('#t-next').onclick=()=>tour.next(); $('#t-pause').onclick=()=>tour.toggle();
-$('#t-exit').onclick=()=>tour.stop(); $('#t-open').onclick=()=>{ const id=tour.steps[tour.i].id; tour.stop(); id?select(id):overview(); };
+$('#t-exit').onclick=()=>tour.stop();
+// phones hide the tour paragraph while the narrator reads it; this brings it back for anyone who wants to read along
+let showText=store.get('showText',false);
+const ccUI=()=>{ document.body.classList.toggle('show-text',showText); $('#t-cc').classList.toggle('on',showText); };
+$('#t-cc').onclick=()=>{ showText=!showText; store.set('showText',showText); ccUI(); }; ccUI(); $('#t-open').onclick=()=>{ const id=tour.steps[tour.i].id; tour.stop(); id?select(id):overview(); };
 
 // ---------------- light travel ----------------
 const clock=s=>{ const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=Math.floor(s%60); return (h?h+':':'')+String(m).padStart(h?2:1,'0')+':'+String(x).padStart(2,'0'); };
