@@ -1,4 +1,6 @@
-// เครื่องมือประกอบการสอน — เทียบขนาด · คำนวณ · ไทม์ไลน์ · ควิซ · คู่มือ
+// เครื่องมือประกอบการสอน — เทียบขนาด · คำนวณ · ไทม์ไลน์ · ควิซ · ดวงจันทร์และฤดูกาล · คู่มือ
+import { drawPhases, drawEclipse, drawSeasons, moonAge, dayOfYear, setMoonImage } from './moon-lesson.js';
+import { EXTRA_TEXT } from './solar-lessons.js';
 const S = window.SOLAR;
 export const ORDER = ['sun','mercury','venus','earth','mars','jupiter','saturn','uranus','neptune','moon'];
 export const C = 299792.458;
@@ -26,7 +28,7 @@ export function durTxt(s){
   return fmt(s/31557600,s<31557600*100?1:0)+' ปี';
 }
 
-export function makeTools({scene, openSheet, select, sfx}){
+export function makeTools({scene, openSheet, select, sfx, say, saying, hush}){
   let quizKey = null;
   const head=(k,t,sub,tabs)=>`<header class="sh-head"><div class="kick">${k}</div><h2>${t}</h2>${sub?`<p>${sub}</p>`:''}${
     tabs?`<nav class="sh-tabs">${tabs.map(([id,l],i)=>`<button data-t="${id}"${i?'':' class="on"'}>${l}</button>`).join('')}</nav>`:''}</header><div class="sh-body"></div>`;
@@ -190,6 +192,75 @@ export function makeTools({scene, openSheet, select, sfx}){
     render();
   }
 
+  // ---------- ดวงจันทร์ · อุปราคา · ฤดูกาล ----------
+  const PLAY='<svg class="ic" viewBox="0 0 16 16"><path d="M5 3.2v9.6L12.8 8z" fill="currentColor" stroke="none"/></svg>', PAUSE='<svg class="ic" viewBox="0 0 16 16"><path d="M5 3.5v9M11 3.5v9" stroke-width="2.2"/></svg>';
+  const SPK='<svg class="ic" viewBox="0 0 16 16"><path d="M2.5 6v4h2.7L9 13V3L5.2 6z" fill="currentColor" stroke="none"/><path d="M11.2 5.4a3.6 3.6 0 0 1 0 5.2"/></svg>';
+  let moonTex=null;
+  // a canvas that fills its column (16:9 when there is room, 4:5 on phones) and repaints on resize and once the fonts are in
+  function board(el, draw){
+    const wrap=document.createElement('div'); wrap.className='ml-board'; const cv=document.createElement('canvas'); wrap.appendChild(cv); el.appendChild(wrap);
+    const paint=()=>{ const w=wrap.clientWidth; if(!w) return; const h=Math.round(w*(w>=560?9/16:5/4)), dpr=Math.min(2,devicePixelRatio||1);
+      if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){ cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); cv.style.height=h+'px'; }
+      const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,w,h); draw(g,w,h); };
+    new ResizeObserver(paint).observe(wrap); if(document.fonts) document.fonts.ready.then(paint);
+    return paint;
+  }
+  function narration(el, key, txt){
+    const d=document.createElement('div'); d.className='ml-narr';
+    d.innerHTML=`<button class="btn" data-say>${SPK}<span>ฟังบรรยาย</span></button><p>${txt}</p>`; el.appendChild(d);
+    const b=d.querySelector('[data-say]'), ui=()=>{ const on=saying(key); b.classList.toggle('on',on); b.querySelector('span').textContent=on?'หยุดบรรยาย':'ฟังบรรยาย'; };
+    b.onclick=()=>{ say(key,ui); ui(); }; ui();
+  }
+  // a looping animation that stops itself once its tab is gone
+  function looper(el, step){
+    let on=false, last=0;
+    const tick=now=>{ if(!on) return; if(!el.isConnected){ on=false; return; } step(Math.min(0.1,(now-last)/1000)); last=now; requestAnimationFrame(tick); };
+    return { get on(){ return on; }, set(v){ on=v; if(v){ last=performance.now(); requestAnimationFrame(tick); } } };
+  }
+  function playBtn(ctl, loop){
+    const b=ctl.querySelector('[data-play]'), ui=()=>{ b.innerHTML=loop.on?PAUSE:PLAY; b.title=loop.on?'หยุด':'เล่น'; };
+    b.onclick=()=>{ loop.set(!loop.on); ui(); }; ui(); return ui;
+  }
+  function moon(tab){
+    if(!moonTex){ moonTex=new Image(); moonTex.src='textures/moon_color_4k.jpg'; setMoonImage(moonTex); }
+    const root=openSheet(head('บทเรียน · โลกและดวงจันทร์','ข้างขึ้นข้างแรม อุปราคา และฤดูกาล','สามเรื่องนี้เกิดจากการโคจรของโลกและดวงจันทร์ ลองเลื่อนดู แล้วกดฟังคำอธิบาย',
+      [['phases','ข้างขึ้นข้างแรม'],['eclipse','อุปราคา'],['seasons','ฤดูกาล']]),{w:920});
+    tabbed(root,{phases:phasesTab,eclipse:eclipseTab,seasons:seasonsTab},tab);
+  }
+  function phasesTab(el){
+    hush(); const today=moonAge(); let age=today;
+    const paint=board(el,(g,w,h)=>drawPhases(g,w,h,{age,today}));
+    const ctl=document.createElement('div'); ctl.className='ml-ctl';
+    ctl.innerHTML=`<button class="ib ml-play" data-play></button><label class="ml-range"><span>อายุดวงจันทร์</span><input type="range" min="0" max="29.5" step="0.05" value="${age.toFixed(2)}"></label><button class="chip" data-now>คืนนี้</button>`;
+    el.appendChild(ctl);
+    const r=ctl.querySelector('input'), set=a=>{ age=a; r.value=a.toFixed(2); paint(); };
+    const loop=looper(el,dt=>set((age+dt*2.5)%29.5)), ui=playBtn(ctl,loop);
+    r.oninput=()=>{ loop.set(false); ui(); age=+r.value; paint(); };
+    ctl.querySelector('[data-now]').onclick=()=>{ loop.set(false); ui(); set(today); };
+    narration(el,'x-phases',EXTRA_TEXT.phases);
+  }
+  function eclipseTab(el){
+    hush(); let mode='solar';
+    const paint=board(el,(g,w,h)=>drawEclipse(g,w,h,{mode}));
+    const ctl=document.createElement('div'); ctl.className='ml-ctl';
+    ctl.innerHTML=`<div class="chips">${[['solar','สุริยุปราคา'],['lunar','จันทรุปราคา'],['tilt','ทำไมไม่เกิดทุกเดือน']].map(([k,l])=>`<button class="chip${k===mode?' on':''}" data-m="${k}">${l}</button>`).join('')}</div>`;
+    el.appendChild(ctl);
+    ctl.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ mode=b.dataset.m; ctl.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b)); paint(); });
+    narration(el,'x-eclipse',EXTRA_TEXT.eclipse);
+  }
+  function seasonsTab(el){
+    hush(); const today=dayOfYear(new Date()); let doy=today;
+    const paint=board(el,(g,w,h)=>drawSeasons(g,w,h,{doy:Math.round(doy)}));
+    const ctl=document.createElement('div'); ctl.className='ml-ctl';
+    ctl.innerHTML=`<button class="ib ml-play" data-play></button><label class="ml-range"><span>วันในหนึ่งปี</span><input type="range" min="1" max="365" step="1" value="${doy}"></label><button class="chip" data-now>วันนี้</button>`;
+    el.appendChild(ctl);
+    const r=ctl.querySelector('input'), set=d=>{ doy=d; r.value=Math.round(d); paint(); };
+    const loop=looper(el,dt=>set((doy-1+dt*40)%365+1)), ui=playBtn(ctl,loop);
+    r.oninput=()=>{ loop.set(false); ui(); doy=+r.value; paint(); };
+    ctl.querySelector('[data-now]').onclick=()=>{ loop.set(false); ui(); set(today); };
+    narration(el,'x-seasons',EXTRA_TEXT.seasons);
+  }
+
   // ---------- คู่มือ ----------
   function help(){
     const K=[['Space','เล่น / หยุดเวลา'],['← →','ดาวก่อนหน้า / ถัดไป'],['1 – 8','ดาวเคราะห์ดวงที่ 1–8 นับจากดวงอาทิตย์'],['9','ดวงจันทร์'],['0','ดวงอาทิตย์'],
@@ -201,5 +272,5 @@ export function makeTools({scene, openSheet, select, sfx}){
       <h4 class="sub">ที่มาของภาพพื้นผิว</h4><p class="note">ภาพพื้นผิวดาวและทางช้างเผือก: Solar System Scope (อ้างอิงข้อมูล NASA) สัญญาอนุญาต CC BY 4.0 · แผนที่ปกติและค่าสะท้อนแสงของโลก: ตัวอย่างจาก three.js</p></div></div>`;
   }
 
-  return { compare, calc, timeline, quiz, help, key:e=>quizKey?quizKey(e):false, clearKey:()=>{ quizKey=null; } };
+  return { compare, calc, timeline, quiz, moon, help, key:e=>quizKey?quizKey(e):false, clearKey:()=>{ quizKey=null; } };
 }

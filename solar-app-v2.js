@@ -36,11 +36,16 @@ function openSheet(html, {w=880}={}){
   $('#sheet').style.setProperty('--w', w+'px'); $('#sheet').classList.add('open');
   return b;
 }
-function closeSheet(){ $('#sheet').classList.remove('open'); tools.clearKey(); }
+function closeSheet(){ $('#sheet').classList.remove('open'); tools.clearKey(); hushExtra(); }
+// the moon / seasons sheet narrates with 'x-' clips; they stop with the sheet
+function hushExtra(){ if(audio.voiceId&&audio.voiceId.startsWith('x-')) audio.stopVoice(); }
 $('#sheet-x').innerHTML = IC.x;
 $('#sheet-x').onclick = closeSheet;
 $('#sheet').onclick = e => { if (e.target.id==='sheet') closeSheet(); };
-const tools = makeTools({ scene, openSheet, select: id => { closeSheet(); select(id); }, audio, sfx: n => audio.sfx(n, 0.7) });
+const tools = makeTools({ scene, openSheet, select: id => { closeSheet(); select(id); }, sfx: n => audio.sfx(n, 0.7), hush: hushExtra,
+  saying: key => audio.voiceId === key,
+  say: (key, onend) => { if (audio.voiceId === key) return audio.stopVoice(); lessonStop(); if (tour.on) tour.stop();
+    audio.init(); if (!audio.on) { audio.setOn(true); soundUI(); } audio.narrate(key, onend, 0, 'th'); } });
 $$('[data-tool]').forEach(b => b.onclick = () => {
   const t=b.dataset.tool;
   if (t==='light') return light.on ? light.stop() : light.start();
