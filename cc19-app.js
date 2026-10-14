@@ -2,7 +2,7 @@
 import { THREE, createStage, makeSky, GU, clamp, lerp, smooth, ramp } from './cc19-core.js';
 import { makeCosmos } from './cc19-cosmos.js';
 import { makeEarthScenes } from './cc19-earth.js';
-import { VO, VO_LEAD, VO_TAIL, voFile, SFX, sfxFile } from './cc-vo.js';
+import { VO, VO_EN, VO_LEAD, VO_TAIL, voFile, voLen, SFX, sfxFile } from './cc-vo.js';
 import { AudioKit } from './audio-kit.js';
 import { initCosmicVR } from './cc-vr.js';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -47,16 +47,21 @@ const SCENES=[
  {id:'civilization',dur:10,ya:[12000,70],log:1,join:1,audio:'humans',th:'อารยธรรม',en:'Civilization',
   cth:'จากไร่นาแห่งแรกจนถึงเมืองที่สว่างไสวในวันนี้ ทั้งหมดกินเวลาแค่ 27 วินาทีสุดท้ายของปีจักรวาล',cen:'From the first farms to today’s glowing cities: the last 27 seconds of the cosmic year.',
   ticks:[[12000,'เริ่มทำเกษตรกรรม','Agriculture'],[5200,'ประดิษฐ์ตัวอักษร','Writing'],[4500,'มหาพีระมิดแห่งกีซา','The Great Pyramid'],[2600,'สมัยพุทธกาล','The age of the Buddha'],[575,'แท่นพิมพ์','The printing press'],[339,'นิวตันกับกฎแรงโน้มถ่วง','Newton’s gravity'],[266,'ปฏิวัติอุตสาหกรรม','Industrial Revolution'],[147,'หลอดไฟฟ้า','Electric light']]},
- {id:'spaceage',dur:8,ya:[69,57],audio:'spaceage',fx:[[0.6,'sparkle']],th:'ยุคอวกาศ',en:'The Space Age',
+ {id:'spaceage',dur:8,ya:[69,65],audio:'spaceage',fx:[[0.6,'sparkle']],th:'ยุคอวกาศ',en:'The Space Age',
   cth:'ปี 1957 สปุตนิก 1 ขึ้นสู่วงโคจร และวันนี้ดาวเทียมนับหมื่นดวงห่อหุ้มโลกเราไว้',cen:'In 1957 Sputnik 1 reaches orbit. Today more than ten thousand satellites wrap the planet.'},
+ {id:'gagarin',dur:9,ya:[65,57.2],audio:'spaceage',th:'มนุษย์คนแรกในอวกาศ',en:'The First Human in Space',
+  cth:'ปี 1961 ยูริ กาการิน ขึ้นไปโคจรรอบโลก และกลายเป็นมนุษย์คนแรกที่ได้เห็นโลกจากอวกาศ',cen:'In 1961 Yuri Gagarin orbits the Earth, the first human to see our world from space.'},
  {id:'moon',dur:9,ya:[57,56.8],audio:'moon',th:'เหยียบดวงจันทร์',en:'We Reach the Moon',
   cth:'มนุษย์ได้เดินบนดวงจันทร์ในปี 1969 และได้เห็นโลกลอยขึ้นเหนือขอบฟ้าของอีกโลกหนึ่ง',cen:'In 1969 humans walk on the Moon — and watch the Earth rise over another world’s horizon.'},
+ {id:'voyager',dur:13,ya:[49,36],audio:'solar',th:'วอยเอเจอร์ออกเดินทาง',en:'The Voyagers Set Out',
+  cth:'ปี 1977 ยานวอยเอเจอร์สองลำออกเดินทาง ใช้แรงโน้มถ่วงของดาวพฤหัสบดีและดาวเสาร์เหวี่ยงตัวเองให้ไปไกลขึ้น และวอยเอเจอร์ 2 ก็ไปต่อจนถึงยูเรนัสและเนปจูน',cen:'In 1977 two Voyager probes set out, slingshotting past Jupiter and Saturn. Voyager 2 flies on to Uranus and Neptune.'},
  {id:'paleblue',dur:22,ya:[36,0],audio:'paleblue',th:'จุดสีฟ้าจาง ๆ',en:'A Pale Blue Dot',
   cth:'ยานวอยเอเจอร์ 1 หันกล้องกลับมามองบ้านในปี 1990 จากระยะ 6 พันล้านกิโลเมตร และโลกทั้งใบก็เหลือเพียงจุดเล็ก ๆ จุดเดียวในลำแสงอาทิตย์',cen:'In 1990 Voyager 1 looks back from six billion kilometres. The whole Earth is a speck caught in a sunbeam.'}
 ];
 // fit each scene to its narration: a scene too short for its line plays slower (k<1) instead of cutting the voice;
 // d0 is the scene's designed length and every animation inside it keeps running on that clock (lt*k)
-SCENES.forEach(s=>{ s.d0=s.dur; if(VO[s.id]) s.dur=Math.max(s.d0,VO_LEAD+VO[s.id]+VO_TAIL); s.k=s.d0/s.dur; });
+// (one timeline for both narration languages: the longer of the two clips sets the length)
+SCENES.forEach(s=>{ s.d0=s.dur; const v=Math.max(VO[s.id]||0,VO_EN[s.id]||0); if(v) s.dur=Math.max(s.d0,VO_LEAD+v+VO_TAIL); s.k=s.d0/s.dur; });
 let acc=0; SCENES.forEach((s,i)=>{ s.i=i; s.start=acc; acc+=s.dur; }); const TOTAL=acc;
 const sceneAt=t=>{ for(let i=SCENES.length-1;i>=0;i--) if(t>=SCENES[i].start) return i; return 0; };
 function yaAt(s,lt){ const p=clamp(lt/s.dur); return s.log?Math.exp(lerp(Math.log(s.ya[0]),Math.log(s.ya[1]),p)):lerp(s.ya[0],s.ya[1],p); }
@@ -146,8 +151,10 @@ function seek(t){ playhead=clamp(t,0,TOTAL); lastScene=-2; disStart=-1; soundRes
 
 // language / mute / fullscreen / chrome autohide
 const LANGS=['both','th','en'], LL={both:'ไทย + EN',th:'ไทย',en:'EN'}; let lang='both'; try{ lang=localStorage.getItem('cc19.lang')||'both'; }catch(e){}
-function applyLang(){ document.body.dataset.lang=lang; $('#b-lang').textContent=LL[lang]; } applyLang();
-$('#b-lang').onclick=()=>{ lang=LANGS[(LANGS.indexOf(lang)+1)%3]; try{localStorage.setItem('cc19.lang',lang);}catch(e){} applyLang(); };
+// captions follow the setting; the narrator speaks English only in EN, Thai otherwise
+const voLang=()=>lang==='en'?'en':'th';
+function applyLang(){ document.body.dataset.lang=lang; $('#b-lang').textContent=LL[lang]; $('#b-lang').title=lang==='en'?'ภาษา (L) · บรรยายภาษาอังกฤษ':'ภาษา (L) · EN = บรรยายภาษาอังกฤษ'; } applyLang();
+$('#b-lang').onclick=()=>{ const was=voLang(); lang=LANGS[(LANGS.indexOf(lang)+1)%3]; try{localStorage.setItem('cc19.lang',lang);}catch(e){} applyLang(); if(voLang()!==was){ voStop(); voDone=-1; } };
 let muted=false; try{ muted=localStorage.getItem('cc19.mute')==='1'; }catch(e){}
 let narr=true; try{ narr=localStorage.getItem('cc19.vo')!=='0'; }catch(e){} // narration on/off (N); declared before applyMute reads it
 function applyMute(){ document.body.classList.toggle('vo-on',narr&&!muted); $('#b-mute').classList.toggle('off',muted); if(window.CosmicAudio&&CosmicAudio.isReady()) CosmicAudio.setEnabled(!muted); kit.setEnabled(!muted); } applyMute();
@@ -156,7 +163,7 @@ const fs=()=>document.fullscreenElement?document.exitFullscreen():document.docum
 $('#b-fs').onclick=fs;
 let idleT=0; const wake=()=>{ document.body.classList.remove('idle'); idleT=performance.now(); };
 addEventListener('pointermove',wake); addEventListener('keydown',wake);
-function audioInit(){ if(!kit.ready){ kit.init(); kit.setEnabled(!muted); const i=sceneAt(playhead); SCENES.slice(i,i+3).forEach(s=>{ kit.buffer(voFile(s.id)); (SFX[s.id]||[]).forEach(c=>kit.buffer(sfxFile(c[1]))); }); } // later scenes load one ahead
+function audioInit(){ if(!kit.ready){ kit.init(); kit.setEnabled(!muted); const i=sceneAt(playhead); SCENES.slice(i,i+3).forEach(s=>{ kit.buffer(voFile(s.id,voLang())); (SFX[s.id]||[]).forEach(c=>kit.buffer(sfxFile(c[1]))); }); } // later scenes load one ahead
   if(window.CosmicAudio&&!CosmicAudio.isReady()){ CosmicAudio.init(); CosmicAudio.setEnabled(!muted); CosmicAudio.setScene(SCENES[sceneAt(playhead)].audio); CosmicAudio.setPlaying(playing); } }
 addEventListener('keydown',e=>{
   if(!started||e.metaKey||e.ctrlKey) return; const k=e.code;
@@ -178,15 +185,15 @@ function fxStop(f=0.6){ fxLive.forEach(h=>h.stop(f)); fxLive=[]; }
 function soundReset(){ voStop(); fxStop(0.3); voDone=-1; fxI=-1; }
 function syncSound(i,s,lt){
   if(!kit.ready) return;
-  const on=playing&&!scrubbing&&!muted, v=VO[s.id];
+  const on=playing&&!scrubbing&&!muted, L=voLang(), v=voLen(s.id,L);
   // one narration clip per scene, starting VO_LEAD in; a clip that already finished stays finished
   const want=on&&narr&&v&&lt>=VO_LEAD&&lt<VO_LEAD+v-0.3&&voDone!==i;
   if(voH&&(voI!==i||!want)) voStop();
   if(want&&!voH){ voI=i; const off=lt-VO_LEAD;
-    const h=voH=kit.play(voFile(s.id),{bus:'voice',offset:off,fadeIn:off>0.15?0.2:0.02,onend:()=>{ if(voH===h){ voH=null; voDone=i; kit.duck(false); duckScore(false); } }});
+    const h=voH=kit.play(voFile(s.id,L),{bus:'voice',offset:off,fadeIn:off>0.15?0.2:0.02,onend:()=>{ if(voH===h){ voH=null; voDone=i; kit.duck(false); duckScore(false); } }});
     kit.duck(true); duckScore(true); }
   // effects fire as the playhead crosses them; cue times are on the scene's own clock (cc-vo.js)
-  if(fxI!==i){ fxStop(0.9); fxI=i; fxNext=0; const n=SCENES[i+1]; if(n){ kit.buffer(voFile(n.id)); (SFX[n.id]||[]).forEach(c=>kit.buffer(sfxFile(c[1]))); } }
+  if(fxI!==i){ fxStop(0.9); fxI=i; fxNext=0; const n=SCENES[i+1]; if(n){ kit.buffer(voFile(n.id,L)); (SFX[n.id]||[]).forEach(c=>kit.buffer(sfxFile(c[1]))); } }
   const cues=SFX[s.id]||[];
   if(on) while(fxNext<cues.length){ const [at,file,gain,pk]=cues[fxNext], st=at/s.k-pk; if(lt<st) break; if(lt-st<0.4) fxLive.push(kit.play(sfxFile(file),{gain})); fxNext++; }
   else if(fxLive.length) fxStop(0.3);

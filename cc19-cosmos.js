@@ -205,5 +205,39 @@ export function makeCosmos(stage){
       sysTick(lt+30,1,1); const a=env(lt,0.8,6.6,0.8,0.8); if(a>0.01) for(const id in PL) c.labels.push({p:PL[id].position,th:NAMES[id][0],en:NAMES[id][1],a,off:ORB[id][1]});
       c.sky.set(0.55,0.6); c.bars=1; }};
 
+  // ============================================================ VOYAGER (1977 → 1989)
+  // A schematic: the outer planets held where the late-1970s line-up put them, each probe drawing its path
+  // as it swings from world to world. Voyager 1 leaves the plane northward after Saturn (Titan), Voyager 2
+  // goes on to Uranus and Neptune and then south. Years run 1977 → 1990 over the scene.
+  { const g=add(new THREE.Group());
+    const AT={mercury:110,venus:40,earth:205,mars:150,jupiter:242,saturn:276,uranus:316,neptune:352};
+    const at=id=>{ const a=AT[id]*Math.PI/180, R=ORB[id][0]; return new V3(Math.cos(a)*R,0,-Math.sin(a)*R); };
+    const Ep=at('earth'), J=at('jupiter'), Sa=at('saturn'), U=at('uranus'), N=at('neptune');
+    const mid=(a,b,h)=>a.clone().lerp(b,0.5).multiplyScalar(1.04).add(new V3(0,h,0));
+    const path=(pts,yrs)=>({curve:new THREE.CatmullRomCurve3(pts),yrs});
+    const P1=path([Ep,mid(Ep,J,0.15),J.clone().add(new V3(0,0.12,0)),Sa.clone().add(new V3(0,0.2,0)),Sa.clone().multiplyScalar(1.12).add(new V3(0,6.5,0))],[1977.68,1978.45,1979.18,1980.87,1990]);
+    const P2=path([Ep,mid(Ep,J,-0.1),J,Sa,U,N,N.clone().multiplyScalar(1.22).add(new V3(0,-2.4,0))],[1977.64,1978.6,1979.52,1981.65,1986.07,1989.65,1992]);
+    const lines=[[P1,0xffd27a],[P2,0x8fd0ff]].map(([P,col])=>{ const n=420, pts=P.curve.getPoints(n);
+      const ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:col,transparent:true,opacity:0.9,depthWrite:false}));
+      ln.frustumCulled=false; g.add(ln); const dot=sprite(SPR.glow,col,0); g.add(dot); return {P,ln,dot,n}; });
+    const year=lt=>1977+lt/12*13; // the scene's own clock (13 s) runs 1977 → 1990
+    const tOf=(P,y)=>{ const Y=P.yrs; if(y<=Y[0]) return 0; for(let k=0;k<Y.length-1;k++) if(y<Y[k+1]) return (k+(y-Y[k])/(Y[k+1]-Y[k]))/(Y.length-1); return 1; };
+    const MEET={jupiter:1979.3,saturn:1981,uranus:1986.07,neptune:1989.65};
+    S.voyager={group:g, bright:true, cam:camPath([[0,[Ep.x-1.3,0.9,Ep.z-1.7],[J.x*0.8,0,J.z*0.8],50],[3.5,[-6.5,4.2,4.5],[Sa.x,0,Sa.z],50],[7.5,[-3,15,21],[6,0,8],48],[13,[6,27,31],[7,0,5],46]]),
+      update(lt,dt,c){ g.visible=true; sys.visible=true; SUN.scale.setScalar(1); SUN.userData.set(1);
+        disk.visible=true; disk.material.uniforms.uClear.value=1; disk.material.uniforms.uT.value=lt+40; disk.material.uniforms.uK.value=0.7;
+        orbitLines.visible=true; orbitLines.children.forEach(l=>l.material.opacity=0.16);
+        const sunW=new V3(); SUN.getWorldPosition(sunW);
+        for(const id in PL){ const p=PL[id]; p.visible=true; p.scale.setScalar(ORB[id][1]); p.userData.mat.uniforms.uHeat.value=0; p.position.copy(at(id)); p.children[0].rotation.y=lt*0.4; litPlanet(p,sunW); }
+        const y=year(lt);
+        for(const L of lines){ const t=tOf(L.P,y), k=Math.max(2,Math.round(t*L.n)); L.ln.geometry.setDrawRange(0,k);
+          L.dot.position.copy(L.P.curve.getPoint(t)); L.dot.scale.setScalar(0.9); L.dot.material.opacity=y>L.P.yrs[0]?0.95:0; }
+        const a=env(lt,0.6,12.4,0.8,0.8);
+        if(a>0.01){ c.labels.push({p:lines[0].dot.position,th:'วอยเอเจอร์ 1',en:'Voyager 1',a,off:0.25},{p:lines[1].dot.position,th:'วอยเอเจอร์ 2',en:'Voyager 2',a,off:0.25});
+          for(const id in MEET){ const b=env(y,MEET[id]-1.6,MEET[id]+1.4,0.6,0.6); if(b>0.01) c.labels.push({p:PL[id].position,th:NAMES[id][0],en:NAMES[id][1],a:b*a,off:ORB[id][1]}); }
+          if(lt<3) c.labels.push({p:PL.earth.position,th:NAMES.earth[0],en:NAMES.earth[1],a:a*(1-smooth(ramp(lt,1.6,3))),off:ORB.earth[1]}); }
+        c.sky.set(0.55,0.6); c.bars=1; }};
+  }
+
   return S;
 }

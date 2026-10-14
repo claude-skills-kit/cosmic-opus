@@ -134,6 +134,26 @@ export function makeEarthScenes(stage){
         sats.material.uniforms.uN.value=0.02+ease(ramp(lt,1.2,7.5))*0.98; sats.material.uniforms.uT.value=lt; c.sky.set(0.4,0.6); c.bars=1; }};
   }
 
+  // ============================================================ FIRST HUMAN IN SPACE (Vostok 1, 1961)
+  // One small capsule on a steep orbit just above the air, crossing from the night side into sunrise.
+  { const g=add(new THREE.Group());
+    // the orbit is turned so its near half crosses the disc from the night side (left) into daylight (right)
+    const Q=new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.25,0,0.32)), RC=1.07, W=0.24, TH0=-2.75;
+    const onOrbit=th=>new V3(Math.cos(th)*RC,0,-Math.sin(th)*RC).applyQuaternion(Q);
+    const cap=sprite(SPR.glow,0xfff0d0,0); g.add(cap);
+    const NT=60, tp=new Float32Array(NT*3), tc=new Float32Array(NT*3), tg=new THREE.BufferGeometry();
+    tg.setAttribute('position',new THREE.BufferAttribute(tp,3)); tg.setAttribute('color',new THREE.BufferAttribute(tc,3));
+    const trail=new THREE.Line(tg,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false})); trail.frustumCulled=false; g.add(trail);
+    S.gagarin={group:g, cam:camPath([[0,[1.0,1.0,3.9],[-0.5,0.05,0],40],[9,[0.45,0.75,3.6],[-0.42,0,0],40]]),
+      update(lt,dt,c){ g.visible=true; earthOn(); sunDir(1,0.18,-0.2); E.era({green:1,oxy:1,lights:0.75,cloudK:0.9,atmoK:1}); E.spin(2.1+lt*0.01);
+        const th=TH0+W*lt, P=onOrbit(th), a=env(lt,0.3,9.4,0.6,0.6);
+        cap.position.copy(P); cap.scale.setScalar(0.1); cap.material.opacity=a;
+        for(let i=0;i<NT;i++){ const q=onOrbit(th-i*0.012); tp.set([q.x,q.y,q.z],i*3); const k=Math.pow(1-i/NT,1.6)*0.85*a; tc.set([k,k*0.92,k*0.8],i*3); }
+        tg.attributes.position.needsUpdate=true; tg.attributes.color.needsUpdate=true;
+        const la=env(lt,0.8,8.4,0.8,0.8); if(la>0.01) c.labels.push({p:P,th:'วอสตอค 1 · ยูริ กาการิน',en:'Vostok 1 · Yuri Gagarin',a:la,off:0.02});
+        c.sky.set(0.45,0.7); c.bars=1; }};
+  }
+
   // ============================================================ EARTHRISE (we reach the Moon)
   S.moon={group:null, still:true, cam:camPath([[0,[0,1.018,0.02],[0,0.16,-10],26],[9,[0.004,1.016,0.0],[0,0.2,-10],23]]),
     update(lt,dt,c){ const d=sunDir(1,0.42,-0.3); moonOn(new V3(0,0,0),1,0); MOON.rotation.set(Math.PI/2,0,0.35);
