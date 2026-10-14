@@ -201,11 +201,11 @@ function syncSound(i,s,lt){
 // while a line is playing, nudge the film toward the voice so lips-and-picture never drift apart
 function voDrift(){ if(!voH||!voH.src||voH.ended) return 0; const s=SCENES[voI], d=s.start+VO_LEAD+(kit.now-voH.started)-playhead; return Math.abs(d)>0.04&&Math.abs(d)<0.6?d*0.12:0; }
 
-// ---------------------------------------------------------------- VR cinema (WebXR, e.g. Meta Quest)
+// ---------------------------------------------------------------- VR: 360° or the cinema screen (WebXR, e.g. Meta Quest)
 const capState={i:0,alpha:0,date:'',ending:null, get key(){ return this.i+'|'+lang+'|'+this.ending; },
   get title(){ const s=SCENES[this.i]; return lang==='en'?s.en:s.th; }, get line(){ const s=SCENES[this.i]; return lang==='en'?s.cen:s.cth; },
   get meta(){ return String(this.i+1).padStart(2,'0')+' / '+SCENES.length+'   ·   '+this.date; } };
-const vr=initCosmicVR({ stage, buttons:[$('#b-vr'),$('#b-vr2')], getCap:()=>capState,
+const vr=initCosmicVR({ stage, buttons:[$('#b-vr'),$('#b-vr2'),$('#b-vr3')], getCap:()=>capState, scenes:SCENES, camFor, isPlaying:()=>playing&&!scrubbing, earth:ES,
   onEnter:()=>{ audioInit(); GU.uPx.value=1; if(!started) begin(playhead>3?SCENES[sceneAt(playhead)].start+0.01:0); else if(!playing) setPlay(true); },
   onExit:()=>{ curPR=0; lastScene=-2; },
   onPlay:()=>$('#b-play').click(),
@@ -253,8 +253,9 @@ function render(t,dt,now){
   const cam=stage.camera; cam.position.copy(k.l).add(tmp);
   const drift=s.obj.still?0:0.004*sph.radius; cam.position.x+=Math.sin(t*0.37)*drift; cam.position.y+=Math.sin(t*0.29+1)*drift*0.7;
   cam.fov=k.f; cam.lookAt(k.l); cam.updateProjectionMatrix();
+  if(vr.immersive) vr.place(k,i,l0,t); // VR 360°: the viewer stands where the story camera is, head free
   s.obj.update(l0,d0,ctx);
-  if(ctx.shake>0){ cam.position.x+=(Math.random()-0.5)*ctx.shake*sph.radius*0.3; cam.position.y+=(Math.random()-0.5)*ctx.shake*sph.radius*0.3; }
+  if(ctx.shake>0&&!vr.immersive){ cam.position.x+=(Math.random()-0.5)*ctx.shake*sph.radius*0.3; cam.position.y+=(Math.random()-0.5)*ctx.shake*sph.radius*0.3; }
   sky.follow(cam);
   let fade=ctx.fade; const dk=disStart<0?0:1-smooth((t-disStart)/1.4); if(dk<=0.001||t<disStart) disStart=-1; stage.dis.uniforms.uK.value=Math.max(0,dk); stage.dis.uniforms.uZ.value=1+0.035*(1-dk);
   const F=stage.finish.uniforms; F.uFade.value=fade; F.uFlash.value=ctx.flash; F.uStreak.value=ctx.streak; F.uBars.value=ctx.bars; F.uTime.value=now*0.001;
@@ -264,8 +265,8 @@ function render(t,dt,now){
   $('#c-date').textContent=lang==='en'?c.en:c.th; $('#c-ya').textContent=lang==='en'?yt[1]:yt[0];
   const capA=Math.min(smooth((lt-0.5)/0.8),smooth((s.dur-lt-0.2)/0.7)); capState.alpha=capA; capState.i=i; capState.date=lang==='en'?c.en:c.th; $('#cap').style.opacity=capA; $('#scrim').style.opacity=0.55+0.45*capA*(s.obj.bright?1:0.6); document.body.classList.toggle('bright',!!s.obj.bright);
   $$('#ticker li').forEach(li=>li.classList.toggle('on',ya<=+li.dataset.ya*1.0001));
-  $('#beams').style.opacity=ctx.beams; drawLabels(ctx.labels);
-  if(vr.active) vr.present(); else stage.composer.render();
+  $('#beams').style.opacity=ctx.beams; drawLabels(vr.active?[]:ctx.labels);
+  if(vr.active) vr.present(ctx); else stage.composer.render();
   if(t>=TOTAL-0.02&&playing){ setPlay(false); showEnding(); }
 }
 function loop(now){
@@ -295,5 +296,5 @@ root.addEventListener('data-om-seek-to-time-frame',e=>{
   seekingHost=true; clearTimeout(hostT); hostT=setTimeout(()=>{ seekingHost=false; },400);
   seek(t); render(playhead,1/30,performance.now()); updateScrub();
 });
-window.__cc={stage,OBJ,ES,seek:t=>{ started=true; $('#intro').classList.add('gone'); seek(t); },play:setPlay,SCENES,TOTAL,
+window.__cc={stage,OBJ,ES,vr,seek:t=>{ started=true; $('#intro').classList.add('gone'); seek(t); },play:setPlay,SCENES,TOTAL,
   voice:()=>voH&&voH.src?{scene:SCENES[voI].id,at:+(kit.now-voH.started).toFixed(2)}:null};

@@ -161,7 +161,7 @@ body.clean #ui,body.clean #cal,body.clean #cap,body.clean #ticker{opacity:0!impo
     <button class="ub" id="b-lang" title="ภาษา (L)">ไทย + EN</button>
     <button class="ub" id="b-vo" title="เสียงบรรยาย (N)"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4h0A2.5 2.5 0 0 1 4 12.5z"/><path d="M8 8h8M8 11h5" stroke="#000" stroke-width="1.6" stroke-linecap="round"/></svg><span>บรรยาย</span></button>
     <button class="ub" id="b-mute" title="เสียง (M)"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"></path><path d="M16.5 12a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12z"></path></svg></button>
-    <button class="ub vr" id="b-vr" hidden title="ดูในแว่น VR (Meta Quest)">VR</button>
+    <button class="ub vr" id="b-vr" data-mode="360" hidden title="ดูในแว่น VR แบบ 360° (Meta Quest) · ในแว่นกด B สลับเป็นจอใหญ่">VR</button>
     <button class="ub" id="b-fs" title="เต็มจอ (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5v2H6v3H4zm11-5h5v5h-2V6h-3V4zM4 15h2v3h3v2H4v-5zm14 3v-3h2v5h-5v-2h3z"></path></svg></button>
   </div>
   <div id="chapters"><div id="chlist"></div></div>
@@ -182,9 +182,9 @@ body.clean #ui,body.clean #cal,body.clean #cap,body.clean #ticker{opacity:0!impo
       <div class="i-en">The Cosmic Calendar</div>
       <p class="i-p">ถ้าย่ออายุทั้งหมดของเอกภพให้เหลือเพียงหนึ่งปี บิกแบงจะเกิดขึ้นตอนเที่ยงคืนวันที่ 1 มกราคม และวันนี้คือเสี้ยววินาทีสุดท้ายก่อนเที่ยงคืนของวันที่ 31 ธันวาคม</p>
       <div class="i-scale"><div><b>1,150 ล้านปี</b><span>หนึ่งเดือน</span></div><div><b>37.8 ล้านปี</b><span>หนึ่งวัน</span></div><div><b>1.6 ล้านปี</b><span>หนึ่งชั่วโมง</span></div><div><b>437 ปี</b><span>หนึ่งวินาที</span></div></div>
-      <div class="i-btns"><button class="pill" id="b-start">เริ่มการเดินทาง</button><button class="pill ghost" id="b-resume" hidden></button><button class="pill ghost vr" id="b-vr2" hidden>ดูในแว่น VR</button></div>
+      <div class="i-btns"><button class="pill" id="b-start">เริ่มการเดินทาง</button><button class="pill ghost" id="b-resume" hidden></button><button class="pill ghost vr" id="b-vr2" data-mode="360" hidden>ดูในแว่น VR · 360°</button><button class="pill ghost vr" id="b-vr3" data-mode="cinema" hidden title="ฉายบนจอโค้งใหญ่ สบายตาสำหรับคนที่เวียนหัวง่าย">VR จอใหญ่</button></div>
     </div>
-    <div class="i-foot">เปิดเสียงเพื่อฟังเสียงบรรยายและเสียงประกอบ · มีแว่น VR กดปุ่ม VR ที่แถบล่าง · ลากเพื่อหมุนมุมมอง · Space เล่น/หยุด · [ ] เปลี่ยนบท</div>
+    <div class="i-foot">เปิดเสียงเพื่อฟังเสียงบรรยายและเสียงประกอบ · มีแว่น VR กดปุ่ม VR ที่แถบล่าง (ยืนอยู่กลางฉาก มองได้รอบตัว 360°) · ลากเพื่อหมุนมุมมอง · Space เล่น/หยุด · [ ] เปลี่ยนบท</div>
   </div>
 </div>
 <script src="cosmic-audio.js"></script>
