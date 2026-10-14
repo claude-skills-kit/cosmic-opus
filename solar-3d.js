@@ -219,6 +219,7 @@ export class SolarScene {
   constructor(canvas, labelHost, opts={}){
     this.canvas=canvas; this.labelHost=labelHost; this.onSelect=opts.onSelect||(()=>{}); this.onLight=opts.onLight||null; this.showBelts=true;
     this.mode='map'; this.date=new Date(); this.speed=1; this.playing=true; this.focus=null;
+    this.lineup=null; this._lineLight=null; // VR size line-up (setLineup)
     this.showOrbits=true; this.showLabels=true; this.panelPx=0;
     this.renderer=new THREE.WebGLRenderer({canvas,antialias:true,logarithmicDepthBuffer:true,powerPreference:'high-performance'});
     this.renderer.setPixelRatio(Math.min(devicePixelRatio,2));
@@ -378,8 +379,37 @@ export class SolarScene {
     this._rebuildOrbits();
   }
 
+  // ---------- VR size line-up ----------
+  // L = { id: {p: world position, r: radius} } puts every body at true relative size where VR wants it, lit from a
+  // far point `light` in front of the row instead of from the Sun at the origin. null puts everything back.
+  setLineup(L, light){
+    this.lineup=L||null; this._lineLight=L&&light?light.clone():null; const sun=this._lineLight||new THREE.Vector3();
+    for(const it of this.items){ if(it.b.kind==='star') continue;
+      it.mat.uniforms.uSun.value.copy(sun);
+      if(it.ring) it.ring.material.uniforms.uSun.value.copy(sun);
+      if(it.clouds) it.clouds.material.uniforms.uSun.value.copy(sun); }
+    this.placeBodies(); // VR places the viewer from these right away, before the next frame
+  }
+  // put every body where it belongs now (the frame loop does this each frame)
+  placeBodies(){ const T=S.julianCenturies(this.date), days=this.date.getTime()/86400000; for(const it of this.items) this._place(it,T,days); }
+  _place(it,T,daysTotal){
+    const b=it.b, LU=this.lineup&&this.lineup[b.id];
+    if(LU) it.holder.position.copy(LU.p);
+    else if(b.el){
+      const h=S.heliocentric(b.el,T), r=Math.hypot(h.x,h.y,h.z), k=this.distFor(r)/r;
+      it.holder.position.set(h.x*k,h.z*k,-h.y*k);
+      if(it.line) it.line.material.uniforms.uHead.value=(h.E/6.283185)%1;
+    } else if(b.parent){
+      const pit=this.items.find(i=>i.b.id===b.parent);
+      const ang=daysTotal/b.orbitDays*6.283185;
+      const d=this.mode==='true'? b.orbitKm/1e6 : Math.max(this.radiusFor(pit.b)*3.2,1.6);
+      it.holder.position.set(pit.holder.position.x+Math.cos(ang)*d, pit.holder.position.y+Math.sin(ang)*d*0.09, pit.holder.position.z+Math.sin(ang)*d);
+    } else it.holder.position.set(0,0,0); // the Sun, back home after a line-up
+  }
+
   // ---------- scale ----------
   radiusFor(b){
+    if(this.lineup&&this.lineup[b.id]) return this.lineup[b.id].r;
     const R=b.r_km/6371;
     if(this.mode==='true') return b.r_km/1e6;
     if(b.kind==='star') return this.mode==='map'?2.2:2.6;
@@ -537,19 +567,10 @@ void main(){
     for(const it of this.items){
       const b=it.b, rad=this.radiusFor(b);
       it.pivot.scale.setScalar(rad);
-      if(it.glow) it.glow.scale.setScalar(rad*(this.mode==='true'?7:4.5)*spr);
+      if(it.glow) it.glow.scale.setScalar(rad*(this.lineup?2.2:this.mode==='true'?7:4.5)*spr);
       if(it.halo){ const near=cw.distanceTo(it.holder.position);
         it.halo.scale.setScalar(rad*3.4*spr); it.halo.material.opacity=Math.max(0,Math.min(0.4,near/(rad*260))); }
-      if(b.el){
-        const h=S.heliocentric(b.el,T), r=Math.hypot(h.x,h.y,h.z), k=this.distFor(r)/r;
-        it.holder.position.set(h.x*k,h.z*k,-h.y*k);
-        if(it.line) it.line.material.uniforms.uHead.value=(h.E/6.283185)%1;
-      } else if(b.parent){
-        const pit=this.items.find(i=>i.b.id===b.parent);
-        const ang=daysTotal/b.orbitDays*6.283185;
-        const d=this.mode==='true'? b.orbitKm/1e6 : Math.max(this.radiusFor(pit.b)*3.2,1.6);
-        it.holder.position.set(pit.holder.position.x+Math.cos(ang)*d, pit.holder.position.y+Math.sin(ang)*d*0.09, pit.holder.position.z+Math.sin(ang)*d);
-      }
+      this._place(it,T,daysTotal);
       // การหมุนรอบตัวเอง — ผูกเพดานอัตราไว้เพื่อให้มองเห็นพื้นผิวทัน
       it.pivot.rotation.z=b.tilt*R2;
       if(b.rotHours){
@@ -558,7 +579,8 @@ void main(){
         this.spin[b.id]=((this.spin[b.id]||0)+dt*rate)%6.283185;
         it.pivot.children[0].rotation.y=this.spin[b.id];
       }
-      if(it.atmo) it.atmo.material.uniforms.uLight.value.copy(it.holder.position).multiplyScalar(-1).normalize();
+      if(it.atmo){ const l=it.atmo.material.uniforms.uLight.value;
+        if(this._lineLight) l.subVectors(this._lineLight,it.holder.position).normalize(); else l.copy(it.holder.position).multiplyScalar(-1).normalize(); }
       if(b.kind!=='star'){
         const U=it.mat.uniforms; U.uCenter.value.copy(it.holder.position);
         if(it.clouds){ if(this.playing) this.cloudRot=((this.cloudRot||0)+dt*0.0035*Math.sign(this.speed||1))%1;
@@ -568,14 +590,14 @@ void main(){
           U.uRingN.value.copy(n); U.uRing.value.y=it.ringR[0]*rad; U.uRing.value.z=it.ringR[1]*rad;
           const RU=it.ring.material.uniforms; RU.uCenter.value.copy(it.holder.position); RU.uR.value=rad; RU.uN.value.copy(n); }
       }
-      if(it.line){ it.line.visible=this.showOrbits && this.mode!=='compare';
+      if(it.line){ it.line.visible=this.showOrbits && this.mode!=='compare' && !this.lineup;
         it.line.material.uniforms.uDim.value=this.focus?(this.focus===b.id?0.3:0.22):1; }
       if(b.kind==='star') it.mat.uniforms.uTime.value=now;
     }
     this.stars.material.uniforms.uT.value=now;
     this.sky.position.copy(cw); this.stars.material.uniforms.uS.value=xr?this.rig.scale.x:1;
     if(this.belts){ const days=T*36525, px=xr?1:this.renderer.getPixelRatio();
-      for(const p of this.belts){ const u=p.material.uniforms; u.uDays.value=days; u.uTrue.value=this.mode==='true'?1:0; u.uPx.value=px; p.visible=this.showBelts; } }
+      for(const p of this.belts){ const u=p.material.uniforms; u.uDays.value=days; u.uTrue.value=this.mode==='true'?1:0; u.uPx.value=px; p.visible=this.showBelts&&!this.lineup; } }
     if(this.light&&this.light.on){
       const L=this.light; L.t+=dt*L.factor;
       const rAU=L.t*299792.458/S.AU, R=this.distFor(rAU), W=Math.max(R*0.012,this.mode==='true'?0.6:0.07);
@@ -585,7 +607,7 @@ void main(){
     }
     if(this.haze){ const s=this.distFor(30.07)*1.35; this.haze.scale.set(s,s,1);
       const cp=cw, h=Math.abs(cp.y)/Math.max(cp.length(),1e-6);
-      const tgt=this.focus?0:0.5*THREE.MathUtils.smoothstep(h,0.2,0.55);
+      const tgt=this.focus||this.lineup?0:0.5*THREE.MathUtils.smoothstep(h,0.2,0.55);
       this.haze.material.opacity+=(tgt-this.haze.material.opacity)*Math.min(1,dt*4);
       this.haze.visible=this.haze.material.opacity>0.005; }
     this.film.uniforms.uT.value=now;

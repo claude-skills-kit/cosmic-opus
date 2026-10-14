@@ -308,12 +308,12 @@ addEventListener('keydown',e=>{
 });
 
 // ---------------- VR (WebXR, e.g. Meta Quest) ----------------
-initSolarVR({ scene, S, ORDER, audio, button: $('#b-vr'),
+const vr = initSolarVR({ scene, S, ORDER, audio, button: $('#b-vr'),
   onEnter: () => { if (tour.on) tour.stop(); if (light.on) light.stop(); lessonStop(); closeSheet(); closePanel(); hideHint(); document.body.classList.add('in-vr'); },
   onExit: () => { document.body.classList.remove('in-vr'); $$('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===scene.mode)); overview(); }
 });
 
-window.__ss={scene,audio,tour,lesson}; // read-only handle for automated checks
+window.__ss={scene,audio,tour,lesson,vr}; // read-only handle for automated checks
 
 // ---------------- start ----------------
 markDock(null);

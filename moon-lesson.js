@@ -85,10 +85,12 @@ function arrow(g, x1, y1, x2, y2, color, w = 2, head = 9) {
 
 // The Moon as seen from Earth (north up, northern-hemisphere view): the dark part is a half disc
 // on the unlit side plus half an ellipse whose width follows cos(elongation).
+// the Moon texture for the 'seen from Earth' disc, loaded once on first use (draws grey until it arrives)
 let moonImg = null;
-export function setMoonImage(img) { moonImg = img; }
+export function moonImage() { if (!moonImg && typeof Image !== 'undefined') { moonImg = new Image(); moonImg.src = 'textures/moon_color_4k.jpg'; } return moonImg; }
 function moonPhaseDisc(g, x, y, r, E) {
   g.save(); g.beginPath(); g.arc(x, y, r, 0, TAU); g.clip();
+  const moonImg = moonImage();
   if (moonImg && moonImg.complete && moonImg.naturalWidth) { const w = moonImg.naturalWidth; g.drawImage(moonImg, w * .25, 0, w * .5, moonImg.naturalHeight, x - r, y - r, 2 * r, 2 * r); }
   else { g.fillStyle = '#c9c3b8'; g.fillRect(x - r, y - r, 2 * r, 2 * r); }
   const k = Math.cos(E), rx = r * Math.abs(k), waxing = E < Math.PI;

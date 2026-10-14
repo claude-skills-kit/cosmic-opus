@@ -1,5 +1,5 @@
 // เครื่องมือประกอบการสอน — เทียบขนาด · คำนวณ · ไทม์ไลน์ · ควิซ · ดวงจันทร์และฤดูกาล · คู่มือ
-import { drawPhases, drawEclipse, drawSeasons, moonAge, dayOfYear, setMoonImage } from './moon-lesson.js';
+import { drawPhases, drawEclipse, drawSeasons, moonAge, dayOfYear, moonImage } from './moon-lesson.js';
 import { EXTRA_TEXT } from './solar-lessons.js';
 const S = window.SOLAR;
 export const ORDER = ['sun','mercury','venus','earth','mars','jupiter','saturn','uranus','neptune','moon'];
@@ -195,7 +195,6 @@ export function makeTools({scene, openSheet, select, sfx, say, saying, hush}){
   // ---------- ดวงจันทร์ · อุปราคา · ฤดูกาล ----------
   const PLAY='<svg class="ic" viewBox="0 0 16 16"><path d="M5 3.2v9.6L12.8 8z" fill="currentColor" stroke="none"/></svg>', PAUSE='<svg class="ic" viewBox="0 0 16 16"><path d="M5 3.5v9M11 3.5v9" stroke-width="2.2"/></svg>';
   const SPK='<svg class="ic" viewBox="0 0 16 16"><path d="M2.5 6v4h2.7L9 13V3L5.2 6z" fill="currentColor" stroke="none"/><path d="M11.2 5.4a3.6 3.6 0 0 1 0 5.2"/></svg>';
-  let moonTex=null;
   // a canvas that fills its column (16:9 when there is room, 4:5 on phones) and repaints on resize and once the fonts are in
   function board(el, draw){
     const wrap=document.createElement('div'); wrap.className='ml-board'; const cv=document.createElement('canvas'); wrap.appendChild(cv); el.appendChild(wrap);
@@ -222,7 +221,6 @@ export function makeTools({scene, openSheet, select, sfx, say, saying, hush}){
     b.onclick=()=>{ loop.set(!loop.on); ui(); }; ui(); return ui;
   }
   function moon(tab){
-    if(!moonTex){ moonTex=new Image(); moonTex.src='textures/moon_color_4k.jpg'; setMoonImage(moonTex); }
     const root=openSheet(head('บทเรียน · โลกและดวงจันทร์','ข้างขึ้นข้างแรม อุปราคา และฤดูกาล','สามเรื่องนี้เกิดจากการโคจรของโลกและดวงจันทร์ ลองเลื่อนดู แล้วกดฟังคำอธิบาย',
       [['phases','ข้างขึ้นข้างแรม'],['eclipse','อุปราคา'],['seasons','ฤดูกาล']]),{w:920});
     tabbed(root,{phases:phasesTab,eclipse:eclipseTab,seasons:seasonsTab},tab);
@@ -230,6 +228,7 @@ export function makeTools({scene, openSheet, select, sfx, say, saying, hush}){
   function phasesTab(el){
     hush(); const today=moonAge(); let age=today;
     const paint=board(el,(g,w,h)=>drawPhases(g,w,h,{age,today}));
+    const img=moonImage(); if(img&&!img.complete) img.addEventListener('load',paint,{once:true});
     const ctl=document.createElement('div'); ctl.className='ml-ctl';
     ctl.innerHTML=`<button class="ib ml-play" data-play></button><label class="ml-range"><span>อายุดวงจันทร์</span><input type="range" min="0" max="29.5" step="0.05" value="${age.toFixed(2)}"></label><button class="chip" data-now>คืนนี้</button>`;
     el.appendChild(ctl);

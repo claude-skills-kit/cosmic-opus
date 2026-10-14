@@ -89,8 +89,9 @@ export function aim(p) {
 }
 
 // Gamepad buttons with edge detection (xr-standard mapping: 0 trigger, 1 grip, 3 stick, 4 A/X, 5 B/Y).
+// The stick reports one event per push: {stick: ±1} left/right, {stickY: ±1} up (-1) / down (+1).
 export class Pads {
-  constructor() { this.prev = {}; this.stickLatch = {}; }
+  constructor() { this.prev = {}; this.stickLatch = {}; this.yLatch = {}; }
   read(session) {
     const ev = []; if (!session) return ev;
     for (const s of session.inputSources) {
@@ -101,6 +102,9 @@ export class Pads {
       const dir = x > 0.7 ? 1 : x < -0.7 ? -1 : 0;
       if (dir && this.stickLatch[h] !== dir) ev.push({ hand: h, stick: dir });
       this.stickLatch[h] = Math.abs(x) < 0.3 ? 0 : (dir || this.stickLatch[h]);
+      const y = gp.axes.length >= 4 ? gp.axes[3] : gp.axes[1] || 0, dy = y > 0.7 ? 1 : y < -0.7 ? -1 : 0;
+      if (dy && !dir && this.yLatch[h] !== dy) ev.push({ hand: h, stickY: dy });
+      this.yLatch[h] = Math.abs(y) < 0.3 ? 0 : (dy || this.yLatch[h]);
     }
     return ev;
   }
