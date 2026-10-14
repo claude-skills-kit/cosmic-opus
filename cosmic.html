@@ -130,6 +130,8 @@ body.clean #ui,body.clean #cal,body.clean #cap,body.clean #ticker{opacity:0!impo
   #ticker{display:none}
   .lname{display:none}
   #time,#b-lang{display:none}
+  /* the meta line (scene · calendar time · year) is long in the last minute; tighten it so the year stays on screen */
+  .c-meta{gap:8px;letter-spacing:.04em}.c-meta i{width:10px}
   #b-vo span{display:none}
   /* phones: the narrator reads the caption, so only the title and date stay on screen */
   body.vo-on #c-pth,body.vo-on #c-pen{display:none}

@@ -408,6 +408,8 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:5px;b
   #t-open::before{content:'บทเรียน';font-size:12px}
   #t-exit::before{content:'✕';font-size:14px}
 }
+/* the narrowest phones: the progress bar already shows where the tour is, so the step count gives way to the buttons */
+@media (max-width:400px){ #t-step{display:none} .t-row{justify-content:flex-end} }
 @media (max-width:560px){
   .view .tog{display:none}
   /* one tap-to-switch button instead of a two-label segment, so the date card isn't overlapped */
