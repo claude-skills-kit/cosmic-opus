@@ -233,7 +233,8 @@ export function makeCosmos(stage){
         for(const L of lines){ const t=tOf(L.P,y), k=Math.max(2,Math.round(t*L.n)); L.ln.geometry.setDrawRange(0,k);
           L.dot.position.copy(L.P.curve.getPoint(t)); L.dot.scale.setScalar(0.9); L.dot.material.opacity=y>L.P.yrs[0]?0.95:0; }
         const a=env(lt,0.6,12.4,0.8,0.8);
-        if(a>0.01){ c.labels.push({p:lines[0].dot.position,th:'วอยเอเจอร์ 1',en:'Voyager 1',a,off:0.25},{p:lines[1].dot.position,th:'วอยเอเจอร์ 2',en:'Voyager 2',a,off:0.25});
+        // Voyager 1's label rides higher so the two don't stack while the probes travel together
+        if(a>0.01){ c.labels.push({p:lines[0].dot.position,th:'วอยเอเจอร์ 1',en:'Voyager 1',a,off:0.75},{p:lines[1].dot.position,th:'วอยเอเจอร์ 2',en:'Voyager 2',a,off:0.2});
           for(const id in MEET){ const b=env(y,MEET[id]-1.6,MEET[id]+1.4,0.6,0.6); if(b>0.01) c.labels.push({p:PL[id].position,th:NAMES[id][0],en:NAMES[id][1],a:b*a,off:ORB[id][1]}); }
           if(lt<3) c.labels.push({p:PL.earth.position,th:NAMES.earth[0],en:NAMES.earth[1],a:a*(1-smooth(ramp(lt,1.6,3))),off:ORB.earth[1]}); }
         c.sky.set(0.55,0.6); c.bars=1; }};
