@@ -53,6 +53,9 @@ export function initSolarVR({ scene, S, ORDER, audio, button, onEnter, onExit })
     saved = { pos: cam.position.clone(), quat: cam.quaternion.clone(), near: cam.near, speed: scene.speed, mode: scene.mode, focus: scene.focus };
     if (scene.mode !== 'map') scene.setMode('map');
     scene._tw = null; scene.controls.enabled = false;
+    // three ignores controllers reported before getController() is called, and a headset reports them as the
+    // session starts, so the pointers must exist before the session does (not after the fonts arrive)
+    if (!pointers) pointers = makePointers(R, rig, { onSelect });
     try { session = await startXR(R, { scale: 1.0, onEnd: leave }); }
     catch (e) { console.warn('XR', e); scene.controls.enabled = true; fade.v = fade.to = 0; fade.update(0); return; }
     cam.near = 0.05; cam.updateProjectionMatrix();
@@ -84,7 +87,6 @@ export function initSolarVR({ scene, S, ORDER, audio, button, onEnter, onExit })
   function build() {
     built = true;
     fade = fade || new Fade(cam);
-    pointers = makePointers(R, rig, { onSelect });
     dock = new Panel(1.3, 0.32, 1000); dock.name = 'dock'; rig.add(dock.mesh);
     card = new Panel(1.0, 0.7, 1100); card.name = 'card'; rig.add(card.mesh);
     board = new Panel(1.6, 1.0, 900); board.name = 'board'; rig.add(board.mesh);
