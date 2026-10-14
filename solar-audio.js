@@ -1,6 +1,7 @@
-// Solar System Explorer — narration (ElevenLabs Eleven v4, voice "Jessica") and sound
-// (ElevenLabs Sound Effects v2), both generated through fal.ai. Shared by the page and VR mode.
+// Solar System Explorer — narration (ElevenLabs Eleven v4, voice "Jessica"; the English tour is Kokoro
+// "af_heart") and sound (ElevenLabs Sound Effects v2), all generated through fal.ai. Shared by the page and VR mode.
 import { AudioKit, Bed } from './audio-kit.js';
+import { LESSON_VO, EXTRA_VO } from './solar-lessons.js';
 
 // clip lengths in seconds, one per tour stop
 export const VO = {overview:15.3,sun:20.29,mercury:19.13,venus:14.9,earth:20.35,mars:18.41,jupiter:18.9,saturn:20.48,uranus:20.58,neptune:18.2,moon:19.76};
@@ -18,8 +19,17 @@ export const VO_TEXT = {
   neptune: 'ก่อนจะมีใครมองเห็นดาวเนปจูน คณิตศาสตร์ก็พบมันแล้ว มันอยู่ไกลจากดวงอาทิตย์ 30 หน่วยดาราศาสตร์ แสงอาทิตย์ต้องเดินทางราว 4 ชั่วโมงกว่าจะไปถึง สีของมันน้ำเงินเข้มกว่ายูเรนัสทั้งที่มีมีเทนใกล้เคียงกัน และเรื่องนี้ยังเป็นคำถามที่ปิดไม่ลง',
   moon: 'มองจากโลก ดวงจันทร์กับดวงอาทิตย์ดูใหญ่ใกล้เคียงกัน สุริยุปราคาเต็มดวงจึงเกิดขึ้นได้พอดี บริวารดวงนี้ทำให้โลกมีฤดูกาลที่มั่นคงและมีน้ำขึ้นน้ำลง บนผิวของมันไม่มีลมและฝน รอยเท้าของนักบินอวกาศจึงอยู่ได้นับล้านปี'
 };
+// English tour clip lengths in seconds
+export const VO_EN = {overview:13.52,sun:19.3,mercury:15,venus:11.59,earth:18.36,mars:16.34,jupiter:16.16,saturn:18.44,uranus:18.89,neptune:16.62,moon:16.05};
 const VO_ORDER = Object.keys(VO);
 const voFile = id => `audio/vo/solar/${String(VO_ORDER.indexOf(id) + 1).padStart(2, '0')}-${id}.mp3`;
+// One clip per key: a tour stop ('sun', in the narration language), a lesson tab ('sun-in') or an extra lesson ('x-phases').
+export function clipOf(key, lang = 'th') {
+  if (VO[key]) return lang === 'en' && VO_EN[key] ? { file: `audio/vo/solar-en/${key}.mp3`, dur: VO_EN[key] } : { file: voFile(key), dur: VO[key] };
+  if (LESSON_VO[key]) return { file: `audio/vo/lessons/${key}.mp3`, dur: LESSON_VO[key] };
+  const x = key.startsWith('x-') ? key.slice(2) : '';
+  return EXTRA_VO[x] ? { file: `audio/vo/extra/${x}.mp3`, dur: EXTRA_VO[x] } : null;
+}
 const BEDS = { sun: 'sol-sun', earth: 'sol-earth', mars: 'sol-mars', jupiter: 'sol-jupiter', saturn: 'sol-saturn', uranus: 'sol-ice', neptune: 'sol-ice' };
 const sfxFile = n => `audio/sfx/${n}.mp3`;
 
@@ -27,6 +37,7 @@ export class SolarAudio {
   constructor() {
     this.kit = new AudioKit(); this.voice = null; this.voiceId = null; this.beds = {}; this.bedName = null;
     try { this.on = localStorage.getItem('ss.sound') !== '0'; } catch (e) { this.on = true; }
+    try { this.lang = localStorage.getItem('ss.lang') === 'en' ? 'en' : 'th'; } catch (e) { this.lang = 'th'; }
     this.kit.on = this.on;
   }
   // must run inside a click / key / select handler the first time
@@ -34,10 +45,13 @@ export class SolarAudio {
     const fresh = !this.kit.ready; this.kit.init(); if (!fresh) return;
     this.space = new Bed(this.kit, sfxFile('sol-amb'), { gain: 0.9 });
     for (const n of new Set(Object.values(BEDS))) this.beds[n] = new Bed(this.kit, sfxFile(n), { gain: 0.8 });
-    ['sol-whoosh', 'sol-select', 'sol-tour'].forEach(n => this.kit.prefetch(sfxFile(n)));
+    ['sol-whoosh', 'sol-select', 'sol-tour', 'sol-right', 'sol-wrong'].forEach(n => this.kit.prefetch(sfxFile(n)));
     this.space.start(4);
   }
   setOn(on) { this.on = on; this.kit.setEnabled(on); try { localStorage.setItem('ss.sound', on ? '1' : '0'); } catch (e) {} if (!on) this.stopVoice(); }
+  // tour narration language; lessons are Thai only
+  setLang(l) { this.lang = l === 'en' ? 'en' : 'th'; try { localStorage.setItem('ss.lang', this.lang); } catch (e) {} }
+  clipDur(key, lang = this.lang) { const c = clipOf(key, lang); return c ? c.dur : 0; }
   sfx(name, gain = 1) { if (this.on && this.kit.ready) this.kit.play(sfxFile(name), { gain }); }
   // crossfade to the ambience of the body in view (none for the rocky inner worlds)
   focusBed(id) {
@@ -45,11 +59,14 @@ export class SolarAudio {
     if (this.bedName) this.beds[this.bedName].stop(2); this.bedName = n;
     if (n) this.beds[n].start(2.5);
   }
-  narrate(id, onend, offset = 0) {
-    this.stopVoice(); if (!VO[id] || !this.kit.ready || !this.on || offset > VO[id] - 0.3) return null;
-    const h = this.voice = this.kit.play(voFile(id), { bus: 'voice', offset, fadeIn: offset ? 0.2 : 0.02, onend: () => { if (this.voice === h) { this.voice = null; this.voiceId = null; this.kit.duck(false); } onend && onend(); } });
-    this.voiceId = id; this.kit.duck(true); return h;
+  narrate(key, onend, offset = 0, lang = this.lang) {
+    this.stopVoice(); const c = clipOf(key, lang);
+    if (!c || !this.kit.ready || !this.on || offset > c.dur - 0.3) return null;
+    const h = this.voice = this.kit.play(c.file, { bus: 'voice', offset, fadeIn: offset ? 0.2 : 0.02, onend: () => { if (this.voice === h) { this.voice = null; this.voiceId = null; this.kit.duck(false); } onend && onend(); } });
+    this.voiceId = key; this.kit.duck(true); return h;
   }
+  // the body the current clip is about ('sun-in' → 'sun'), or null
+  voiceBody() { return this.voiceId && !this.voiceId.startsWith('x-') ? this.voiceId.split('-')[0] : null; }
   stopVoice() { if (this.voice) { this.voice.stop(0.25); this.voice = null; this.voiceId = null; this.kit.duck(false); } }
   // 0..1 through the current clip, or -1
   voiceProgress() { const h = this.voice; return h && h.src && h.dur ? Math.min(1, (this.kit.now - h.started) / h.dur) : -1; }

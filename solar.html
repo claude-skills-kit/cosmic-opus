@@ -68,6 +68,7 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:5px;b
 .sys{display:flex;gap:6px}
 #b-sound.off{color:var(--ink-3)}
 #t-cc{display:none}#t-cc.on{color:var(--accent-hi)}
+#t-lang{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;border:1px solid var(--line-2)}
 .tb.vr{color:var(--accent-hi);box-shadow:inset 0 0 0 1px rgba(244,169,92,.45)}.tb.vr:hover{background:rgba(244,169,92,.14);color:#fff}
 .in-vr #top,.in-vr #deck,.in-vr #hint{opacity:.35;pointer-events:none}
 .p-foot .btn .ic{width:15px;height:15px;margin-right:6px;vertical-align:-2px}
@@ -141,6 +142,12 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:5px;b
 .p-tabs button{padding:7px 10px;font-size:12.5px;color:var(--ink-3);border-radius:8px;white-space:nowrap;transition:.2s}
 .p-tabs button:hover{color:var(--ink-2)}
 .p-tabs button.on{color:var(--ink);background:rgba(255,255,255,.09)}
+/* tabs the narrator covers carry a dot; the one being read shows its progress */
+.p-tabs button{position:relative}
+.p-tabs button.vo::before{content:'';display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--pc-l);opacity:.75;margin-right:6px;vertical-align:2px}
+.p-tabs button.playing{color:var(--ink);background:color-mix(in oklab,var(--pc) 22%,transparent)}
+.p-tabs button.playing::after{content:'';position:absolute;left:10px;bottom:3px;height:2px;border-radius:2px;background:var(--pc-l);width:calc((100% - 20px) * var(--p,0))}
+.p-foot .btn[data-listen].on{border-color:var(--pc-l);color:var(--pc-l)}
 .p-body{padding:22px 26px 6px}
 .in{animation:fadeup .4s var(--ease)}
 @keyframes fadeup{from{opacity:0;transform:translateY(8px)}}
@@ -441,7 +448,7 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:5px;b
 
 <div id="tour" class="glass">
   <div class="t-prog"><i id="t-bar"></i></div>
-  <div class="t-row"><span class="t-step" id="t-step"></span><button id="t-prev" title="ก่อนหน้า (←)"></button><button id="t-pause" title="หยุด / เล่น (Space)"></button><button id="t-next" title="ถัดไป (→)"></button><button id="t-cc" title="แสดงข้อความ">ข้อความ</button><button id="t-open">อ่านบทเรียน</button><button id="t-exit">จบทัวร์</button></div>
+  <div class="t-row"><span class="t-step" id="t-step"></span><button id="t-prev" title="ก่อนหน้า (←)"></button><button id="t-pause" title="หยุด / เล่น (Space)"></button><button id="t-next" title="ถัดไป (→)"></button><button id="t-lang" title="Narrate in English (E)">EN</button><button id="t-cc" title="แสดงข้อความ">ข้อความ</button><button id="t-open">อ่านบทเรียน</button><button id="t-exit">จบทัวร์</button></div>
   <div id="t-txt"><h3 id="t-title"></h3><p id="t-text"></p></div>
 </div>
 

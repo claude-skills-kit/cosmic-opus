@@ -1,0 +1,32 @@
+{
+ "phases": {
+  "file": "audio/vo/extra/phases.mp3",
+  "dur": 20.3,
+  "speech": 20
+ },
+ "eclipse": {
+  "file": "audio/vo/extra/eclipse.mp3",
+  "dur": 23.14,
+  "speech": 23.2
+ },
+ "seasons": {
+  "file": "audio/vo/extra/seasons.mp3",
+  "dur": 23.85,
+  "speech": 23.84
+ },
+ "size": {
+  "file": "audio/vo/extra/size.mp3",
+  "dur": 13.11,
+  "speech": 13.12
+ },
+ "gagarin": {
+  "file": "audio/vo/extra/gagarin.mp3",
+  "dur": 7.36,
+  "speech": 7.44
+ },
+ "voyager": {
+  "file": "audio/vo/extra/voyager.mp3",
+  "dur": 12.89,
+  "speech": 12.88
+ }
+}

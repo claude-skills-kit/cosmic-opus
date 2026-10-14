@@ -1,6 +1,7 @@
 import { SolarScene } from './solar-3d.js';
 import { makeTools, orb, fmt, thDate, store, ORDER, C, durTxt } from './solar-tools-v2.js';
 import { SolarAudio, VO, VO_TEXT } from './solar-audio.js';
+import { LESSON_VO, TOUR_EN } from './solar-lessons.js';
 import { initSolarVR } from './solar-vr.js';
 const S = window.SOLAR;
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
@@ -39,7 +40,7 @@ function closeSheet(){ $('#sheet').classList.remove('open'); tools.clearKey(); }
 $('#sheet-x').innerHTML = IC.x;
 $('#sheet-x').onclick = closeSheet;
 $('#sheet').onclick = e => { if (e.target.id==='sheet') closeSheet(); };
-const tools = makeTools({ scene, openSheet, select: id => { closeSheet(); select(id); } });
+const tools = makeTools({ scene, openSheet, select: id => { closeSheet(); select(id); }, audio, sfx: n => audio.sfx(n, 0.7) });
 $$('[data-tool]').forEach(b => b.onclick = () => {
   const t=b.dataset.tool;
   if (t==='light') return light.on ? light.stop() : light.start();
@@ -68,10 +69,11 @@ function select(id){
   renderPanel(S.byId(id));
   $('#panel').classList.add('open'); document.body.classList.add('panel-open');
   hideHint(); syncOffset(); scene.focusOn(id);
-  audio.focusBed(id); audio.sfx('sol-whoosh',0.45); if(!tour.on&&audio.voiceId&&audio.voiceId!==id) audio.stopVoice();
+  audio.focusBed(id); audio.sfx('sol-whoosh',0.45); if(!tour.on&&audio.voiceId&&audio.voiceBody()!==id){ lessonStop(); audio.stopVoice(); }
+  lessonUI();
 }
 function overview(){ closePanel(); focusId=null; markDock(null); scene.focusOn(null); audio.focusBed(null); }
-function closePanel(){ if(!tour.on) audio.stopVoice(); $('#panel').classList.remove('open'); document.body.classList.remove('panel-open'); current=null; syncOffset(); }
+function closePanel(){ lessonStop(); if(!tour.on) audio.stopVoice(); $('#panel').classList.remove('open'); document.body.classList.remove('panel-open'); current=null; syncOffset(); }
 function syncOffset(){
   if (!$('#panel').classList.contains('open')) return scene.setPanelOffset(0);
   if (isMobile()) scene.setPanelOffset($('#panel').offsetHeight, 'bottom');
@@ -100,18 +102,48 @@ function renderPanel(b){
     <div class="p-scroll">
       <header class="p-hero"><div class="p-kick">${kicker(b)}</div><h2>${b.th}</h2><div class="p-en">${b.en}</div><p class="p-tag">${b.tagline}</p>
         <dl class="p-keys">${keyStats(b).map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl></header>
-      <nav class="p-tabs">${TABS.map(([k,l])=>`<button data-tab="${k}"${k===tab?' class="on"':''}>${l}</button>`).join('')}</nav>
+      <nav class="p-tabs">${TABS.map(([k,l])=>`<button data-tab="${k}" class="${k===tab?'on':''}${hasVO(b.id,k)?' vo':''}"${hasVO(b.id,k)?' title="มีเสียงบรรยาย"':''}>${l}</button>`).join('')}</nav>
       <div class="p-body" id="pbody"></div>
-      <footer class="p-foot"><button class="btn" data-listen>${SND_ON}<span>ฟังบรรยาย</span></button>${nq?`<button class="btn primary" data-quiz>ทำแบบทดสอบ · ${nq} ข้อ</button>`:''}<button class="btn" data-next>ถัดไป: ${nx.th} ${IC.next}</button></footer>
+      <footer class="p-foot"><button class="btn" data-listen title="ฟังบรรยายทีละแท็บ แท็บจะเปลี่ยนตามเสียง">${SND_ON}<span>ฟังบทเรียน</span></button>${nq?`<button class="btn primary" data-quiz>ทำแบบทดสอบ · ${nq} ข้อ</button>`:''}<button class="btn" data-next>ถัดไป: ${nx.th} ${IC.next}</button></footer>
     </div>`;
   p.querySelector('.pclose').onclick=closePanel;
   p.querySelectorAll('[data-nav]').forEach(x=>x.onclick=()=>stepBody(+x.dataset.nav));
   p.querySelector('[data-next]').onclick=()=>stepBody(1);
   const q=p.querySelector('[data-quiz]'); if(q) q.onclick=()=>tools.quiz(b.id);
-  p.querySelector('[data-listen]').onclick=()=>{ audio.init(); if(!audio.on){ audio.setOn(true); soundUI(); } audio.voiceId===b.id?audio.stopVoice():audio.narrate(b.id); };
-  p.querySelectorAll('[data-tab]').forEach(x=>x.onclick=()=>{ tab=x.dataset.tab; store.set('tab',tab); p.querySelectorAll('[data-tab]').forEach(y=>y.classList.toggle('on',y===x)); drawTab(b); });
+  p.querySelector('[data-listen]').onclick=()=>{ if(lesson.on&&lesson.id===b.id) return lessonStop(); if(tour.on) tour.stop(); lessonPlay(b,tab); };
+  p.querySelectorAll('[data-tab]').forEach(x=>x.onclick=()=>{ setTab(b,x.dataset.tab);
+    // during a lesson a tap moves the narration to that tab, or stops it if the tab has no clip
+    if(lesson.on&&lesson.id===b.id) hasVO(b.id,tab)?lessonPlay(b,tab):lessonStop(); });
+  drawTab(b); lessonUI();
+}
+function setTab(b,t){
+  tab=t; store.set('tab',tab); const p=$('#panel');
+  p.querySelectorAll('[data-tab]').forEach(y=>{ const on=y.dataset.tab===t; y.classList.toggle('on',on); if(on) y.scrollIntoView({block:'nearest',inline:'nearest'}); });
   drawTab(b);
 }
+
+// ---------------- lesson player: narrates the open body tab by tab and turns the tabs with the voice ----------------
+const lesson={on:false,id:null,t:null};
+const tabKey=(id,t)=>t==='ov'?id:`${id}-${t}`;
+function hasVO(id,t){ return t==='ov'?!!VO[id]:!!LESSON_VO[`${id}-${t}`]; }
+function lessonPlay(b,t){
+  const order=TABS.map(x=>x[0]), next=order.slice(Math.max(0,order.indexOf(t))).find(k=>hasVO(b.id,k));
+  if(!next) return lessonStop();
+  audio.init(); if(!audio.on){ audio.setOn(true); soundUI(); }
+  Object.assign(lesson,{on:true,id:b.id,t:next}); if(tab!==next) setTab(b,next);
+  // lessons are Thai only, so the overview tab uses the Thai tour clip whatever the tour language is
+  audio.narrate(tabKey(b.id,next),()=>{ if(!lesson.on||lesson.id!==b.id||lesson.t!==next) return;
+    const k=order.indexOf(next)+1; if(k<order.length&&order.slice(k).some(x=>hasVO(b.id,x))) lessonPlay(b,order[k]); else lessonStop(); },0,'th');
+  lessonUI(); requestAnimationFrame(lessonTick);
+}
+function lessonStop(){ if(!lesson.on) return; lesson.on=false; audio.stopVoice(); lessonUI(); }
+function lessonUI(){
+  const p=$('#panel'), on=lesson.on&&lesson.id===current, btn=p.querySelector('[data-listen]');
+  if(btn){ btn.classList.toggle('on',on); btn.querySelector('span').textContent=on?'หยุดบรรยาย':'ฟังบทเรียน'; }
+  p.querySelectorAll('[data-tab]').forEach(x=>{ x.classList.toggle('playing',on&&x.dataset.tab===lesson.t); if(!on) x.style.removeProperty('--p'); });
+}
+function lessonTick(){ if(!lesson.on) return; const x=$(`#panel [data-tab="${lesson.t}"]`), pr=audio.voiceProgress();
+  if(x&&pr>=0) x.style.setProperty('--p',pr.toFixed(3)); requestAnimationFrame(lessonTick); }
 function drawTab(b){
   const el=$('#pbody'); el.classList.remove('in'); void el.offsetWidth; el.classList.add('in');
   el.innerHTML = ({ov:tabOverview,in:tabInterior,at:tabAtmos,mo:tabMoons,mi:tabMissions,fa:tabFacts})[tab](b);
@@ -189,17 +221,18 @@ new ResizeObserver(()=>document.documentElement.style.setProperty('--deckH',$('#
 
 // ---------------- guided tour ----------------
 const tour={on:false,i:0,paused:false,t:0,dur:12000,last:0,
-  steps:[{id:null,title:'ระบบสุริยะของเรา',en:'Our Solar System',text:VO_TEXT.overview},
-    ...ORDER.map(id=>{ const b=S.byId(id); return {id,title:b.th,en:b.en,text:VO_TEXT[id]||b.tagline+' — '+b.facts[0]}; })],
-  start(){ if(light.on) light.stop(); closeSheet(); closePanel(); hideHint(); this.on=true; this.paused=false; audio.init(); audio.sfx('sol-tour',0.8);
+  steps:[{id:null,title:'ระบบสุริยะของเรา',en:'Our Solar System',text:VO_TEXT.overview,textEn:TOUR_EN.overview},
+    ...ORDER.map(id=>{ const b=S.byId(id); return {id,title:b.th,en:b.en,text:VO_TEXT[id]||b.tagline+' — '+b.facts[0],textEn:TOUR_EN[id]}; })],
+  start(){ if(light.on) light.stop(); lessonStop(); closeSheet(); closePanel(); hideHint(); this.on=true; this.paused=false; audio.init(); audio.sfx('sol-tour',0.8);
     document.body.classList.add('touring'); $('#tour').classList.add('on'); $('#b-tour').classList.add('on'); scene.setAutoRotate(true);
     this.go(0); this.last=performance.now(); requestAnimationFrame(tourLoop); },
   go(i){ if(i>=this.steps.length) return this.stop(); this.i=Math.max(0,i); this.t=0; const s=this.steps[this.i];
     focusId=s.id; markDock(s.id); scene.focusOn(s.id); audio.focusBed(s.id);
-    const vo=s.id||'overview'; this.dur=((VO[vo]||10.4)+1.6)*1000; if(this.paused) audio.stopVoice(); else audio.narrate(vo);
+    const vo=s.id||'overview'; this.dur=((audio.clipDur(vo)||10.4)+1.6)*1000; if(this.paused) audio.stopVoice(); else audio.narrate(vo);
     $('#t-step').textContent=String(this.i+1).padStart(2,'0')+' / '+String(this.steps.length).padStart(2,'0');
     const tx=$('#t-txt'); tx.classList.remove('in'); void tx.offsetWidth; tx.classList.add('in');
-    $('#t-title').innerHTML=`${s.title}<small>${s.en}</small>`; $('#t-text').textContent=s.text; this.setIcon(); },
+    const en=audio.lang==='en'; $('#t-txt').lang=en?'en':'th';
+    $('#t-title').innerHTML=en?`${s.en}<small>${s.title}</small>`:`${s.title}<small>${s.en}</small>`; $('#t-text').textContent=en?s.textEn:s.text; this.setIcon(); },
   next(){ this.go(this.i+1); }, prev(){ this.go(this.i-1); },
   toggle(){ this.paused=!this.paused; this.setIcon(); const vo=this.steps[this.i].id||'overview'; this.paused?audio.stopVoice():audio.narrate(vo,null,this.t/1000); },
   setIcon(){ $('#t-pause').innerHTML=this.paused?IC.play:IC.pause; },
@@ -210,6 +243,10 @@ function tourLoop(now){ if(!tour.on) return; const dt=now-tour.last; tour.last=n
 $('#b-tour').onclick=()=>tour.on?tour.stop():tour.start();
 $('#t-prev').innerHTML=IC.prev; $('#t-next').innerHTML=IC.next;
 $('#t-prev').onclick=()=>tour.prev(); $('#t-next').onclick=()=>tour.next(); $('#t-pause').onclick=()=>tour.toggle();
+// tour narration language: Thai (Jessica) or English (Kokoro)
+function langUI(){ const en=audio.lang==='en'; $('#t-lang').textContent=en?'ไทย':'EN'; $('#t-lang').title=en?'บรรยายภาษาไทย (E)':'Narrate in English (E)'; }
+function toggleLang(){ audio.setLang(audio.lang==='en'?'th':'en'); langUI(); if(tour.on) tour.go(tour.i); toast(audio.lang==='en'?'ทัวร์บรรยายภาษาอังกฤษ':'ทัวร์บรรยายภาษาไทย'); }
+$('#t-lang').onclick=toggleLang; langUI();
 $('#t-exit').onclick=()=>tour.stop();
 // phones hide the tour paragraph while the narrator reads it; this brings it back for anyone who wants to read along
 let showText=store.get('showText',false);
@@ -259,6 +296,7 @@ addEventListener('keydown',e=>{
   else if (k==='KeyL') light.on?light.stop():light.start();
   else if (k==='KeyF') fullscreen();
   else if (k==='KeyM') $('#b-sound').click();
+  else if (k==='KeyE') toggleLang();
   else if (k==='KeyH') bare();
   else if (e.key==='?') tools.help();
   else if (k==='Escape'){ if(document.body.classList.contains('bare')) bare(); else if(tour.on) tour.stop(); else if(light.on) light.stop(); else closePanel(); }
@@ -266,11 +304,11 @@ addEventListener('keydown',e=>{
 
 // ---------------- VR (WebXR, e.g. Meta Quest) ----------------
 initSolarVR({ scene, S, ORDER, audio, button: $('#b-vr'),
-  onEnter: () => { if (tour.on) tour.stop(); if (light.on) light.stop(); closeSheet(); closePanel(); hideHint(); document.body.classList.add('in-vr'); },
+  onEnter: () => { if (tour.on) tour.stop(); if (light.on) light.stop(); lessonStop(); closeSheet(); closePanel(); hideHint(); document.body.classList.add('in-vr'); },
   onExit: () => { document.body.classList.remove('in-vr'); $$('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===scene.mode)); overview(); }
 });
 
-window.__ss={scene,audio,tour}; // read-only handle for automated checks
+window.__ss={scene,audio,tour,lesson}; // read-only handle for automated checks
 
 // ---------------- start ----------------
 markDock(null);

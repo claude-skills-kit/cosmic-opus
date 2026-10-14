@@ -1,0 +1,94 @@
+{
+ "bigbang": {
+  "file": "audio/vo/cosmic-en/bigbang.mp3",
+  "dur": 5.93
+ },
+ "cmb": {
+  "file": "audio/vo/cosmic-en/cmb.mp3",
+  "dur": 9.7
+ },
+ "stars": {
+  "file": "audio/vo/cosmic-en/stars.mp3",
+  "dur": 6.28
+ },
+ "supernova": {
+  "file": "audio/vo/cosmic-en/supernova.mp3",
+  "dur": 7.83
+ },
+ "galaxy": {
+  "file": "audio/vo/cosmic-en/galaxy.mp3",
+  "dur": 5.21
+ },
+ "blackhole": {
+  "file": "audio/vo/cosmic-en/blackhole.mp3",
+  "dur": 7.38
+ },
+ "sunbirth": {
+  "file": "audio/vo/cosmic-en/sunbirth.mp3",
+  "dur": 5.88
+ },
+ "disk": {
+  "file": "audio/vo/cosmic-en/disk.mp3",
+  "dur": 6.86
+ },
+ "solar": {
+  "file": "audio/vo/cosmic-en/solar.mp3",
+  "dur": 3
+ },
+ "theia": {
+  "file": "audio/vo/cosmic-en/theia.mp3",
+  "dur": 5.18
+ },
+ "bombardment": {
+  "file": "audio/vo/cosmic-en/bombardment.mp3",
+  "dur": 5.17
+ },
+ "firstlife": {
+  "file": "audio/vo/cosmic-en/firstlife.mp3",
+  "dur": 5.23
+ },
+ "oxygen": {
+  "file": "audio/vo/cosmic-en/oxygen.mp3",
+  "dur": 6.71
+ },
+ "snowball": {
+  "file": "audio/vo/cosmic-en/snowball.mp3",
+  "dur": 5.48
+ },
+ "cambrian": {
+  "file": "audio/vo/cosmic-en/cambrian.mp3",
+  "dur": 5.92
+ },
+ "dinosaurs": {
+  "file": "audio/vo/cosmic-en/dinosaurs.mp3",
+  "dur": 9.59
+ },
+ "humans": {
+  "file": "audio/vo/cosmic-en/humans.mp3",
+  "dur": 5.53
+ },
+ "civilization": {
+  "file": "audio/vo/cosmic-en/civilization.mp3",
+  "dur": 5.74
+ },
+ "spaceage": {
+  "file": "audio/vo/cosmic-en/spaceage.mp3",
+  "dur": 6.76
+ },
+ "gagarin": {
+  "file": "audio/vo/cosmic-en/gagarin.mp3",
+  "dur": 6.13
+ },
+ "moon": {
+  "file": "audio/vo/cosmic-en/moon.mp3",
+  "dur": 6.45
+ },
+ "voyager": {
+  "file": "audio/vo/cosmic-en/voyager.mp3",
+  "dur": 8.97
+ },
+ "paleblue": {
+  "file": "audio/vo/cosmic-en/paleblue.mp3",
+  "dur": 7.2
+ }
+}

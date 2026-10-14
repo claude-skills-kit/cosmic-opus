@@ -26,7 +26,7 @@ export function durTxt(s){
   return fmt(s/31557600,s<31557600*100?1:0)+' ปี';
 }
 
-export function makeTools({scene, openSheet, select}){
+export function makeTools({scene, openSheet, select, sfx}){
   let quizKey = null;
   const head=(k,t,sub,tabs)=>`<header class="sh-head"><div class="kick">${k}</div><h2>${t}</h2>${sub?`<p>${sub}</p>`:''}${
     tabs?`<nav class="sh-tabs">${tabs.map(([id,l],i)=>`<button data-t="${id}"${i?'':' class="on"'}>${l}</button>`).join('')}</nav>`:''}</header><div class="sh-body"></div>`;
@@ -163,7 +163,7 @@ export function makeTools({scene, openSheet, select}){
     }
     function answer(j){
       if(answered) return; answered=true;
-      const q=pool[i], ok=j===q.c; if(ok) right++;
+      const q=pool[i], ok=j===q.c; if(ok) right++; sfx&&sfx(ok?'sol-right':'sol-wrong');
       log.push({q,j,ok});
       el.querySelectorAll('.qz-o').forEach(o=>{ const k=+o.dataset.j; o.disabled=true; if(k===q.c) o.classList.add('right'); else if(k===j) o.classList.add('wrong'); else o.classList.add('dim'); });
       const ex=el.querySelector('.qz-ex'); ex.hidden=false;
@@ -193,7 +193,7 @@ export function makeTools({scene, openSheet, select}){
   // ---------- คู่มือ ----------
   function help(){
     const K=[['Space','เล่น / หยุดเวลา'],['← →','ดาวก่อนหน้า / ถัดไป'],['1 – 8','ดาวเคราะห์ดวงที่ 1–8 นับจากดวงอาทิตย์'],['9','ดวงจันทร์'],['0','ดวงอาทิตย์'],
-      ['O','ถอยกล้องดูทั้งระบบ'],['T','เริ่ม / จบทัวร์นำชม'],['L','แสงเดินทาง'],['F','เต็มจอ'],['H','ซ่อนเมนูทั้งหมด (สำหรับฉายขึ้นจอ)'],['Esc','ปิดหน้าต่าง']];
+      ['O','ถอยกล้องดูทั้งระบบ'],['T','เริ่ม / จบทัวร์นำชม'],['E','ทัวร์บรรยายภาษาไทย / อังกฤษ'],['L','แสงเดินทาง'],['F','เต็มจอ'],['H','ซ่อนเมนูทั้งหมด (สำหรับฉายขึ้นจอ)'],['Esc','ปิดหน้าต่าง']];
     const M=[['ลาก','หมุนมุมมอง'],['ล้อเมาส์ / บีบสองนิ้ว','ซูมเข้า–ออก'],['คลิกขวาลาก / ลากสองนิ้ว','เลื่อนมุมมอง'],['กดชื่อดาว','เปิดบทเรียนของดาวดวงนั้น']];
     const root=openSheet(head('คู่มือ','วิธีใช้และคีย์ลัด',null),{w:720});
     root.querySelector('.sh-body').innerHTML=`<div class="help"><div><h4 class="sub">แป้นพิมพ์</h4><dl>${K.map(([k,v])=>`<div><dt><kbd>${k}</kbd></dt><dd>${v}</dd></div>`).join('')}</dl></div>
